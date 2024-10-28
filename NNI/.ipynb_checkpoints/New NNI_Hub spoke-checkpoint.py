@@ -2,51 +2,6 @@
 # coding: utf-8
 
 # In[1]:
-import requests
-import hashlib
-import time
-import os
-
-# URL of the script to auto-update from
-SCRIPT_URL = "https://github.com/pranav-kaushal/Nokia/blob/52b98dfe09e7b5a12916fc509d3598a145eeeca9/NNI/New%20NNI_Hub%20spoke.py"
-LOCAL_SCRIPT_PATH = "New NNI_Hub spoke.py"
-CHECK_INTERVAL = 3600  # Time in seconds between checks (e.g., every hour)
-
-def get_remote_file_hash(url):
-    """Fetch the file content from the URL and compute its hash."""
-    response = requests.get(url)
-    if response.status_code == 200:
-        file_content = response.content
-        return hashlib.md5(file_content).hexdigest(), file_content
-    return None, None
-
-def load_local_file_hash(path):
-    """Compute the hash of the local file."""
-    if not os.path.exists(path):
-        return None
-    with open(path, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()
-
-def update_script(content):
-    """Overwrite the local script with new content."""
-    with open(LOCAL_SCRIPT_PATH, "wb") as f:
-        f.write(content)
-    print("Script updated successfully.")
-
-def auto_update_script():
-    while True:
-        print("Checking for updates...")
-        remote_hash, remote_content = get_remote_file_hash(SCRIPT_URL)
-        local_hash = load_local_file_hash(LOCAL_SCRIPT_PATH)
-        
-        if remote_hash and remote_hash != local_hash:
-            print("Update found! Downloading the new version...")
-            update_script(remote_content)
-        
-        time.sleep(CHECK_INTERVAL)  # Wait before checking again
-
-if __name__ == "__main__":
-    auto_update_script()
 
 
 # Import required libraries
