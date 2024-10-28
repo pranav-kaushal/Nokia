@@ -5,13 +5,58 @@
 
 
 # Import required libraries
+# Version 1.08
+
 import pandas as pd
 import os
 import sys
 import re
+import requests
+import hashlib
 import logging
 from datetime import datetime
 from itertools import islice
+
+
+# In[ ]:
+
+
+# Check version from Github
+GITHUB_FILE_URL = "https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/Ring/121to135LLD_Ring.py?token=GHSAT0AAAAAACZTKNYUXFH5S6VHQ7LXTNQCZY7TEBA"
+LOCAL_FILE_PATH = os.path.abspath(r"C://Users\prkausha\Documents\GitHub\Nokia\Ring\downloaded_file.py")  # Path to the current script file
+
+def get_remote_file_content(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.content
+    else:
+        print(f"Failed to retrieve file. Status code: {response.status_code}")
+        return None
+
+def get_file_hash(content):
+    """This will compute the hash of the file content to check for changes."""
+    return hashlib.md5(content).hexdigest()
+
+def check_for_update():
+    # Fetch latest version from GitHub
+    new_content = get_remote_file_content(GITHUB_FILE_URL)
+    if not new_content:
+        return False  # No update due to a fetch issue
+    with open(LOCAL_FILE_PATH, "rb") as f:
+        current_content = f.read()
+    # Compares the hashes to check for update, if its required.
+    if get_file_hash(new_content) != get_file_hash(current_content):
+        print("Update found! Updating script...")
+        with open(LOCAL_FILE_PATH, "wb") as f:
+            f.write(new_content)
+        return True
+    else:
+        print("No update found.")
+        return False
+
+def restart_script():
+    print("Restarting script...")
+    os.execv(sys.executable, ['python'] + sys.argv)
 
 
 # In[2]:
@@ -268,7 +313,7 @@ def metric_int(data):
 # This is only for the node which is connected to B40, it will check for CSR connected to it and the spokes in the ring.
 # So only looking for group "RR-5-ENSESR.
 
-def extract_neighbors(data, start_key, find_value):
+def extract_neighbors(data, start_key):
     global spoke_bgp_neighbors
     global csr_bgp_neighbors
     spoke_bgp_neighbors = {}
@@ -305,7 +350,7 @@ def extract_neighbors(data, start_key, find_value):
     
     return spoke_bgp_neighbors, csr_bgp_neighbors, cluster
 
-def add_spoke_csr_bgp_neighbors(new_group, new_description, spoke_csr_bgp_neighbors, cluster, return_value, start_key, old_import_policy, new_import_policy):
+def add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster_value):
     print('#---------------------------------------------------------')        
     print('######-----       Delete Old BGP Group      -------######')
     print('#---------------------------------------------------------')
@@ -335,8 +380,8 @@ def add_spoke_csr_bgp_neighbors(new_group, new_description, spoke_csr_bgp_neighb
     print('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
     print('                bfd-enable')
     print('                aigp')
-    for spoke_neighbor_ip, description in spoke_csr_bgp_neighbors.items():
-        print('                neighbor {}'.format(spoke_neighbor_ip))
+    for neighbor_ip, description in neighbors.items():
+        print('                neighbor {}'.format(neighbor_ip))
         print('                    description "{}"'.format(description))
         print('                    authentication-key "eNSEbgp"')
         print('                exit')
@@ -347,63 +392,63 @@ def add_spoke_csr_bgp_neighbors(new_group, new_description, spoke_csr_bgp_neighb
 # Print all the spoke nodes under Old group "RR-5-ENSESR"
 def rr_5_ensesr_spoke():
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-	old_import_policy = 'IMPORT_RR-5-ENSESR'
-	find_value = 'B4C'
-	new_group = 'group "RR-5-ENSESR_SPOKE"'
-	new_description = 'Neighbor group for EVPN SPOKE' 
-	new_import_policy = 'IMPORT_RR-5-ENSESR-SPOKE' 
+    old_import_policy = 'IMPORT_RR-5-ENSESR'
+    find_value = 'B4C'
+    new_group = 'group "RR-5-ENSESR_SPOKE"'
+    new_description = 'Neighbor group for EVPN SPOKE' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR-SPOKE' 
     # Extract neighbors and cluster
-    spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
-    add_spoke_csr_bgp_neighbors(new_group, new_description, spoke_bgp_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+    neighbors, csr_bgp_neighbors, cluster_value = extract_neighbors(my_file_pd, start_key)
+    add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster_value)
 
 # Not tested"
 def rr_5_csr_spoke():
     start_key = 'group ' #(Old group name)
-	old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
-	find_value = 'B4C'
-	new_group = 'group "RR-5-ENSESR_CSR"'
-	new_description = 'Neighbor group for EVPN CSR' 
-	new_import_policy = 'IMPORT_RR-5-ENSESR-CSR' 
+    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    find_value = 'B4C'
+    new_group = 'group "RR-5-ENSESR_CSR"'
+    new_description = 'Neighbor group for EVPN CSR' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR-CSR' 
     # Extract neighbors and cluster
-    spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
-    add_spoke_csr_bgp_neighbors(new_group, new_description, csr_bgp_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+    spoke_bgp_neighbors, neighbors, cluster_value = extract_neighbors(my_file_pd, start_key)
+    add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster_value) #csr_bgp_neighbors
 
 # Print all the spoke nodes under Old group "RR-5-ENSESR" to new group "RR-5-ENSESR_SPOKE"
 def rr_5_ensesr_spoke_IRR():
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-	old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
-	find_value = 'B4C'
-	new_group = 'group "RR-5-ENSESR_SPOKE"'
-	new_description = 'Neighbor group for EVPN SPOKE' 
-	new_import_policy = 'IMPORT_RR-5-ENSESR_CSR-SPOKE' 
+    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    find_value = 'B4C'
+    new_group = 'group "RR-5-ENSESR_SPOKE"'
+    new_description = 'Neighbor group for EVPN SPOKE' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR_CSR-SPOKE' 
     # Extract neighbors and cluster
-    spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
-    add_spoke_csr_bgp_neighbors(new_group, new_description, spoke_bgp_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+    neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
+    add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster_value)
 
 
 # Print all the spoke nodes under Old group "RR-5-ENSESR"
-def RR_5_ENSESR_IRRW_SPOKE():
+def RR_5_ENSESR_IRRW_SPOKE():  #(tested)
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-	old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
-	find_value = 'B4C'
-	new_group = 'group "RR-5-ENSESR_SPOKE"'
-	new_description = 'Neighbor group for EVPN SPOKE' 
-	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-SPOKE' 
+    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    find_value = 'B4C'
+    new_group = 'group "RR-5-ENSESR_SPOKE"'
+    new_description = 'Neighbor group for EVPN SPOKE' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-SPOKE' 
     # Extract neighbors and cluster
-    spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
-    add_spoke_csr_bgp_neighbors(new_group, new_description, spoke_bgp_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+    neighbors, csr_bgp_neighbors, cluster_value = extract_neighbors(my_file_pd, start_key)
+    add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster_value)
 
 
-def RR_5_ENSESR_IRRW_CSR():
+def RR_5_ENSESR_IRRW_CSR():  #(tested)
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-	old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
-	find_value = 'B4C'
-	new_group = 'group "RR-5-ENSESR_CSR"'
-	new_description = 'Neighbor group for EVPN CSR' 
-	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-CSR' 
+    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    find_value = 'B4C'
+    new_group = 'group "RR-5-ENSESR_CSR"'
+    new_description = 'Neighbor group for EVPN CSR' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-CSR' 
     # Extract neighbors and cluster
-    spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
-    add_spoke_csr_bgp_neighbors(new_group, new_description, csr_bgp_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+    csr_bgp_neighbors, neighbors, cluster_value = extract_neighbors(my_file_pd, start_key)  
+    add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster_value)
 
 
 #East Spokes
@@ -411,26 +456,26 @@ def RR_5_ENSESR_IRRW_CSR():
 # Print all the spoke nodes under Old group "RR-5-ENSESR"
 def RR_5_ENSESR_IRRE_SPOKE(spoke_bgp_neighbors):
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-	old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
-	find_value = 'B4C'
-	new_group = 'group "RR-5-ENSESR_SPOKE"'
-	new_description = 'Neighbor group for EVPN SPOKE' 
-	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-SPOKE' 
+    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    find_value = 'B4C'
+    new_group = 'group "RR-5-ENSESR_SPOKE"'
+    new_description = 'Neighbor group for EVPN SPOKE' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-SPOKE' 
     # Extract neighbors and cluster
-    spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
-    add_spoke_csr_bgp_neighbors(new_group, new_description, spoke_bgp_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+    neighbors, csr_bgp_neighbors, cluster_value = extract_neighbors(my_file_pd, start_key)
+    add_spoke_csr_bgp_neighbors(new_group, new_description, neighbors, cluster_value, start_key, old_import_policy, new_import_policy)
 
 
 def RR_5_ENSESR_IRRE_CSR():
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-	old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
-	find_value = 'B4C'
-	new_group = 'group "RR-5-ENSESR_CSR"'
-	new_description = 'Neighbor group for EVPN CSR' 
-	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-CSR' 
+    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    find_value = 'B4C'
+    new_group = 'group "RR-5-ENSESR_CSR"'
+    new_description = 'Neighbor group for EVPN CSR' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-CSR' 
     # Extract neighbors and cluster
-    spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd, start_key)
-    add_spoke_csr_bgp_neighbors(new_group, new_description, csr_bgp_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+    spoke_bgp_neighbors, neighbors, cluster_value = extract_neighbors(my_file_pd, start_key)
+    add_spoke_csr_bgp_neighbors(new_group, new_description, neighbors, cluster_value, start_key, old_import_policy, new_import_policy) # csr neighbor
 
 
 
@@ -556,7 +601,7 @@ def extract_ring_neighbors(data, start_key, find_value):
                 ring_neighbor_ip = line.split()[1]
             elif line.startswith('description') and in_neighbor_block:
                 description = line.split(' ', 1)[1].strip('"')
-                if find_value not in description:  # Check if description does not contain "B40"
+                if find_value in description:  # Check if description does not contain "B40"
                     ring_neighbors[ring_neighbor_ip] = description
                 in_neighbor_block = False
             elif line == 'exit':
@@ -568,7 +613,7 @@ def extract_ring_neighbors(data, start_key, find_value):
  
 
 
-def new_ring_bgp_group(new_group, new_description, neighbors, cluster, return_value, start_key, old_import_policy, new_import_policy):
+def new_ring_bgp_group(new_group, new_description, ring_neighbors, cluster, start_key, old_import_policy, new_import_policy):
     print('#---------------------------------------------------------')        
     print('######-----       Delete Old BGP Group      -------######')
     print('#---------------------------------------------------------')
@@ -605,33 +650,50 @@ def new_ring_bgp_group(new_group, new_description, neighbors, cluster, return_va
     print('#--------------------------------------------------')
 
 
-def rr_5_ensesr_csr_peer():
+def rr_5_ensesr_csr_peer_west():
 	start_key = 'group "RR-5-PEER"' #(Old group name)
 	old_import_policy = 'IMPORT_RR-5-PEER'
-	find_value = 'B40'
+	find_value = 'B4C'
 	new_group = 'group "RR-5-ENSESR_IRR"'
 	new_description = 'Neighbor group for EVPN IRR' 
 	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-IRR' 
     # Extract neighbors and cluster
-	neighbors, cluster = extract_ring_neighbors(my_file_pd, start_key, find_value)
-	new_ring_bgp_group(new_group, new_description,neighbors,cluster, start_key, old_import_policy, new_import_policy)
+	ring_neighbors, cluster = extract_ring_neighbors(my_file_pd, start_key, find_value)
+	if ring_neighbors:
+        # Extract the first (and only) key and value
+		ring_neighbor_ip = next(iter(ring_neighbors.keys()))
+		description = ring_neighbors[ring_neighbor_ip]
+		print ('                neighbor {}'.format(ring_neighbor_ip))
+		print ('                    description "{}"'.format(ring_neighbors[ring_neighbor_ip]))
+    
+	new_ring_bgp_group(new_group, new_description, ring_neighbors, cluster, start_key, old_import_policy, new_import_policy)
+
+def rr_5_ensesr_csr_peer_east():
+	start_key = 'group "RR-5-PEER"' #(Old group name)
+	old_import_policy = 'IMPORT_RR-5-PEER'
+	find_value = 'B4C'
+	new_group = 'group "RR-5-ENSESR_IRR"'
+	new_description = 'Neighbor group for EVPN IRR' 
+	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-IRR' 
+    # Extract neighbors and cluster
+	ring_neighbors, cluster = extract_ring_neighbors(my_file_pd, start_key, find_value)
+	new_ring_bgp_group(new_group, new_description, ring_neighbors, cluster, start_key, old_import_policy, new_import_policy)
 
 
-
-# In[14]:
+# In[12]:
 
 
 #--- This is non B40 ring router
 def extract_b40_neighbors(data, start_key, find_value):
     global b40_neighbors
-    b40_neighbors = {}
+    b40_neighbors = {}  # Ensure it is a dictionary
     try:
         # Find the start of the group "RR-5-ENSESR"
-        group_start_idx = data[data['config'].str.contains(start_key)].index[0] #Find the index of the line containing 'group "RR-5-ENSESR"'.
+        group_start_idx = data[data['config'].str.contains(start_key)].index[0]
         group_end_idx_candidates = data[data['config'].str.contains(r'group ')].index.tolist()
         group_end_idx = next((idx for idx in group_end_idx_candidates if idx > group_start_idx), len(data))
         
-        in_neighbor_block = False #Use a flag in_neighbor_block to track if we are within a neighbor block.
+        in_neighbor_block = False
         b40_neighbor_ip = None
     
         for i in range(group_start_idx + 1, len(data)):
@@ -642,7 +704,7 @@ def extract_b40_neighbors(data, start_key, find_value):
                 b40_neighbor_ip = line.split()[1]
             elif line.startswith('description') and in_neighbor_block:
                 description = line.split(' ', 1)[1].strip('"')
-                if find_value in description:  # Check if description does not contain "B40"
+                if find_value in description:
                     b40_neighbors[b40_neighbor_ip] = description
                 in_neighbor_block = False
             elif line == 'exit':
@@ -650,10 +712,10 @@ def extract_b40_neighbors(data, start_key, find_value):
     except IndexError:
         print("The target group 'RR-5-PEER' was not found in the file.")
     
-    return b40_neighbors
+    return b40_neighbors 
 
 
-def add_b40_neighbors(new_description, new_import_policy, old_import_policy):
+def add_b40_neighbors(new_description, start_key, b40_neighbors, new_import_policy, new_group, old_import_policy):
     print('##---------------------------------------------------------')        
     print('######-----       Delete Old BGP Group      -------######')
     print('##---------------------------------------------------------')
@@ -662,13 +724,13 @@ def add_b40_neighbors(new_description, new_import_policy, old_import_policy):
     print('    no {}'.format(start_key))
     print('        exit')
     print('/configure router policy-options')
-    print ('            begin')
+    print('            begin')
     print('    no policy-statement "{}"'.format(old_import_policy))
     print('    no policy-statement "{}"'.format(old_import_policy.replace("IMPORT", "EXPORT")))
     print('        exit all')
-    print ('            commit')
-    print ('        exit')
-    print ('exit all')
+    print('            commit')
+    print('        exit')
+    print('exit all')
     print('')
     print('##---------------------------------------------------------')        
     print('######-----        Add New BGP Group        -------######')
@@ -676,22 +738,27 @@ def add_b40_neighbors(new_description, new_import_policy, old_import_policy):
     print('/configure router bgp')
     print('    {}'.format(new_group))
     print('                description "{}"'.format(new_description))
-    print ('                family evpn label-ipv4')
-    print ('                type internal')
-    print ('                import "{}"'.format(new_import_policy))
-    print ('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
-    print ('                bfd-enable')
-    print ('                aigp')
-    if b40_neighbors:
-    # Extract the first (and only) key and value
+    print('                family evpn label-ipv4')
+    print('                type internal')
+    print('                import "{}"'.format(new_import_policy))
+    print('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
+    print('                bfd-enable')
+    print('                aigp')
+    
+    # Check if there are any neighbors in b40_neighbors
+    if isinstance(b40_neighbors, dict) and b40_neighbors:
+        # Extract the first (and only) key and value
         b40_neighbor_ip = next(iter(b40_neighbors.keys()))
         description = b40_neighbors[b40_neighbor_ip]
-        print ('                neighbor {}'.format(b40_neighbor_ip))
-        print ('                    description "{}"'.format(b40_neighbors[b40_neighbor_ip]))
-        print ('                    authentication-key "eNSEbgp"')
-        print ('                exit')
-    print ('exit all')
-    print ('#--------------------------------------------------')
+        print('                neighbor {}'.format(b40_neighbor_ip))
+        print('                    description "{}"'.format(description))
+        print('                exit')
+        print('exit all')
+        print('#--------------------------------------------------')
+    else:
+        print("No B40 neighbors found.")
+
+
 
 
 
@@ -702,31 +769,31 @@ def rr_5_ensesr_ebh():
     new_group = 'group "RR-5-ENSESR_EBH"'
     new_description = 'Neighbor group for EVPN EBH Acess Leaf' 
     new_import_policy = 'IMPORT_RR-5-ENSESR-EBH'
-    b40_neighbors = extract_ring_neighbors(my_file_pd, start_key, find_value)
-    add_b40_neighbors(new_description, b40_neighbors, new_import_policy, old_import_policy)
+    b40_neighbors = extract_b40_neighbors(my_file_pd, start_key, find_value)
+    add_b40_neighbors(new_description, start_key, b40_neighbors, new_import_policy, new_group, old_import_policy)
 
-def rr_5_ensesr_irrw_ebh():
-    start_key = 'group "RR-5-ENSESR-CLIENT"' #(Old group name)
-    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
-    find_value = 'B40'
-    new_group = 'group "RR-5-ENSESR_EBH"'
-    new_description = 'Neighbor group for EVPN EBH Acess Leaf' 
-    new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-EBH'
-    b40_neighbors = extract_ring_neighbors(my_file_pd, start_key, find_value)
-    add_b40_neighbors(new_description, b40_neighbors, new_import_policy, old_import_policy)
-
-def rr_5_ensesr_irre_ebh():
+def rr_5_ensesr_ebh_west():
     start_key = 'group "RR-5-ENSESR-CLIENT"' #(Old group name)
     old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
     find_value = 'B40'
     new_group = 'group "RR-5-ENSESR_EBH"'
     new_description = 'Neighbor group for EVPN EBH Acess Leaf' 
     new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-EBH'
-    b40_neighbors = extract_ring_neighbors(my_file_pd, start_key, find_value)
-    add_b40_neighbors(new_description, b40_neighbors, new_import_policy, old_import_policy)
+    b40_neighbors = extract_b40_neighbors(my_file_pd, start_key, find_value)
+    add_b40_neighbors(new_description, start_key, b40_neighbors, new_import_policy, new_group, old_import_policy)
+
+def rr_5_ensesr_ebh_east():
+    start_key = 'group "RR-5-ENSESR-CLIENT"' #(Old group name)
+    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    find_value = 'B40'
+    new_group = 'group "RR-5-ENSESR_EBH"'
+    new_description = 'Neighbor group for EVPN EBH Acess Leaf' 
+    new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-EBH'
+    b40_neighbors = extract_b40_neighbors(my_file_pd, start_key, find_value)
+    add_b40_neighbors(new_description, start_key, b40_neighbors, new_import_policy, new_group, old_import_policy)
 
 
-# In[15]:
+# In[13]:
 
 
 def policy_bgp():
@@ -798,7 +865,7 @@ def policy_remove():
     print('        exit all')
 
 
-# In[16]:
+# In[14]:
 
 
 # Create a function to print all the required bof routes to be added and deleted
@@ -826,7 +893,7 @@ def create_bof(old_statics):
         print("/bof no", routes)
 
 
-# In[17]:
+# In[15]:
 
 
 def policy_RR_5_ENSESR_IRRW_CSR():
@@ -1676,7 +1743,7 @@ def policy_RR_5_ENSESR_CSR():
     print ('        exit')
 
 
-# In[18]:
+# In[16]:
 
 
 def site_int():
@@ -1690,7 +1757,7 @@ def site_int():
     print('/show system rollback')
     print('/admin rollback save comment "Pre-update Checkpoint"')
     print('')
-    if my_file_pd['config'][ecmp].to_string() != 2:
+    if ecmp_value[1] != '2':
         print('#--------------------------------------------------')
         print("# This router has ecmp value of 2, please change it to ecmp 1")
         print('#--------------------------------------------------')
@@ -1717,7 +1784,7 @@ def site_int():
     
 
 
-# In[20]:
+# In[17]:
 
 
 def new_qos():
@@ -1770,7 +1837,7 @@ def new_qos():
     print('        exit all')
 
 
-# In[21]:
+# In[18]:
 
 
 # B40 group change and check interface to 1000000
@@ -1863,7 +1930,7 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
-# In[22]:
+# In[19]:
 
 
 # Post check ping check script / 
@@ -1890,7 +1957,7 @@ def pre_post_b40():
         print('ping router-instance "CELL_MGMT" {}'.format(mgm.split('/', 1)[0][8:]))
 
 
-# In[25]:
+# In[20]:
 
 
 def find_unnumbered_int(data):
@@ -1927,7 +1994,13 @@ def find_unnumbered_int(data):
 #    print(f"Ports with unnumbered: {unnumbered_ports}")
 
 
-# In[26]:
+# In[ ]:
+
+
+
+
+
+# In[21]:
 
 
 def main():
@@ -1935,161 +2008,99 @@ def main():
     global folder
     scan_file()
     all_files()
+    cwd = os.getcwd()  # Save the current directory to return back after each iteration
+    print(cwd)
     for items in path:
-        create_pd()
-        if not os.path.isdir(name):
-            os.mkdir(name)
+        try:
+            create_pd()
+            print(name)
+
+            # Find what kind of a node is it B40, Ring, Spoke
+            policy_peer_w = my_file_pd.index[(my_file_pd['config'].str.contains('group "RR-5-PEER"')) & (my_file_pd['config'].shift(-1).str.contains('IRR-W to IRR-E'))].tolist()
+            policy_peer_e = my_file_pd.index[(my_file_pd['config'].str.contains('group "RR-5-PEER"')) & (my_file_pd['config'].shift(-1).str.contains('IRR-E to IRR-W'))].tolist()
+            policy_spoke = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR"')].tolist() #--- These are spokes and CSR 
+            has_B40 = my_file_pd.index[(my_file_pd['config'].str.contains('import "IMPORT_RR-5-ENSESR-CLIENT') & my_file_pd['config'].shift(-6).str.contains('description.*B40'))].tolist()
+    
+            # This following is to use invert operator to ensure there is no b40 in description.
+            has_no_B40_but_spoke = my_file_pd.index[(my_file_pd['config'].str.fullmatch('import "IMPORT_RR-5-ENSESR-CLIENT"') & ~ my_file_pd['config'].shift(-6).str.contains('description.*B40', na=False))].tolist() 
+            
+    
+            if not os.path.isdir(name):
+                os.mkdir(name)
             os.chdir(name)
             folder = os.getcwd()
-        else:
-            os.chdir(name)
-            folder = os.getcwd()
-        # Find what kind of a node is it B40, Ring, Spoke
-        policy_client = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-PEER"')].tolist() # east or west ring router but not B40
-        policy_spoke = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR"')].tolist() #--- These are spokes and CSR 
-        is_B40 = my_file_pd.index[(my_file_pd['config'].str.fullmatch('import "IMPORT_RR-5-ENSESR-CLIENT"') & my_file_pd['config'].shift(-6).str.contains('description.*B40'))].tolist()
-        # This following is to use invert operator to ensure there is no b40 in description.
-        is_csr_spoke = my_file_pd.index[(my_file_pd['config'].str.fullmatch('import "IMPORT_RR-5-ENSESR-CLIENT"') & ~ my_file_pd['config'].shift(-6).str.contains('description.*B40', na=False))].tolist() 
-        
-        # Bool check
-        nonb40_peer_exists = bool(policy_client)
-        spoke_exists = bool(policy_spoke)
-        b40_exists = bool(is_B40)
-        csr_spoke = bool(is_csr_spoke)
-   
-        sys.stdout = open(folder + '/' + name +'_LLD135.cfg','w')
-        create_pd()
-        metric_int(my_file_pd)
-        create_sa_pd()
-        site_int()
-        print('#--------------------------------------------------')
-        print('#       Update BGP Policies and Groups        ')
-        print('#--------------------------------------------------')              
-        policy_bgp()
-      
+
+            # IXRE config changes based on policies
+            sys.stdout = open(folder + '/' + name + '_LLD135.cfg', 'w')
+            metric_int(my_file_pd)
+            site_int()              
+            policy_bgp()
+
     #----------------------------------------------------------------------
-        if b40_exists:        #and len(is_B40)>=1
-                extract_b40_neighbors(my_file_pd) #group "RR-5-ENSESR_CSR" for ring node that IS B40
+            #if bool(has_B40):        #and len(is_B40)>=1
+            #    b40_name_get()
+            #    if '01' in b40_name:
+            #        print("# This is a West Node")
+            #        policy_RR_5_ENSESR_IRRW_EBH() # for ring b40 node (tested)
+            #        rr_5_ensesr_ebh_west() # (tested)
+            #        if bool(policy_spoke):
+            #            spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
+            #            #print(spoke_bgp_neighbors, csr_bgp_neighbors)
+            #            if len(spoke_bgp_neighbors)>=1:
+            #                policy_RR_5_ENSESR_IRRW_SPOKE() # for west spokes
+            #                RR_5_ENSESR_IRRW_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke west neighbors
+            #            if len(csr_bgp_neighbors)>=1:
+            #                policy_RR_5_ENSESR_IRRW_CSR() # policy for the CSR non spoke ixre
+            #                RR_5_ENSESR_IRRW_CSR() # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
+            #    if '02' in b40_name:
+            #        print("# This is a East Node")
+            #        policy_RR_5_ENSESR_IRRE_EBH() # for ring b40 node (tested)
+            #        rr_5_ensesr_ebh_east() # (tested)
+            #        if bool(policy_spoke):
+            #            spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
+            #            #print(spoke_bgp_neighbors, csr_bgp_neighbors)
+            #            if len(spoke_bgp_neighbors)>=1:
+            #                policy_RR_5_ENSESR_IRRE_SPOKE() # for west spokes
+            #                RR_5_ENSESR_IRRE_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke west neighbors
+            #            if len(csr_bgp_neighbors)>=1:
+            #                policy_RR_5_ENSESR_IRRE_CSR() # policy for the CSR non spoke ixre
+            #                RR_5_ENSESR_IRRE_CSR() # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
+        #-----------------------------------------------------------------------------------------------------------------#
+            if bool(policy_peer_e):
+                print(policy_peer_e)
+                policy_RR_5_ENSESR_IRRE_IRR()
+                rr_5_ensesr_csr_peer_east()
+            if bool(policy_peer_w):
+                policy_RR_5_ENSESR_IRRW_IRR()
+                rr_5_ensesr_csr_peer_west()                
                 
-                if '01' in b40_name:
-                    print("This is a West Node")
-                    policy_RR_5_ENSESR_IRRW_EBH() # for ring b40 node
-                    rr_5_ensesr_irrw_ebh()
-                    if spoke_exists:
-                        extract_neighbors(my_file_pd)
-                        if len(spoke_bgp_neighbors) >=1 or len(csr_bgp_neighbors)>=1:
-            #-----------------------------------------------------
-                        if len(spoke_bgp_neighbors)>=1:
-                            policy_RR_5_ENSESR_IRRW_SPOKE() # for west spokes
-                            RR_5_ENSESR_IRRW_SPOKE(spoke_bgp_neighbors) #group "RR-5-ENSESR_SPOKE" for spoke west neighbors
-                        if len(csr_bgp_neighbors)>=1:
-                            policy_RR_5_ENSESR_IRRW_CSR() # policy for the CSR non spoke ixre
-                            RR_5_ENSESR_IRRW_CSR(csr_bgp_neighbors) # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
 
-                    if nonb40_peer_exists: 
-                        extract_ring_neighbors(my_file_pd)
-                        policy_RR_5_ENSESR_IRRW_IRR() # for CSR that is not a spoke
-                        rr_5_ensesr_csr_west() #group "RR-5-ENSESR_CSR" for east or west ring node NOT B40
-                        
-                    # B40-01 changes in a new file
-                    sys.stdout = open(folder + '/' + name +'_B40-01.txt','w')
-                    b40_01_changes_ixre(system_ip, name)
-                    b40_01_rollback_ixre(system_ip, name)
-                    
-                    policy_remove()
-                    
-                else:
-                    print("This is a East Node")
-                    policy_RR_5_ENSESR_IRRE_EBH() # for ring b40 node
-                    rr_5_ensesr_irre_ebh()
-
-                    if spoke_exists:
-                        extract_neighbors(my_file_pd)
-                        if len(spoke_bgp_neighbors) >=1 or len(csr_bgp_neighbors)>=1:
-                            print('/configure router bgp')
-                            print('    group "RR-5-ENSESR" shutdown')
-                            print('    no group "RR-5-ENSESR"')
-                            print('exit all')
-            #--------------------------------------------------------------------------------------------------
-                        if len(spoke_bgp_neighbors)>=1:
-                            policy_RR_5_ENSESR_IRRE_SPOKE() # for East spokes
-                            RR_5_ENSESR_IRRE_SPOKE(spoke_bgp_neighbors) #group "RR-5-ENSESR_SPOKE" for spoke East neighbors
-                        if len(csr_bgp_neighbors)>=1:
-                            policy_RR_5_ENSESR_IRRE_CSR() # policy for the CSR non spoke ixre
-                            RR_5_ENSESR_IRRE_CSR(csr_bgp_neighbors) # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
-
-                    if nonb40_peer_exists: 
-                        extract_ring_neighbors(my_file_pd)
-                        policy_RR_5_ENSESR_IRRE_IRR() # for CSR that is not a spoke
-                        rr_5_ensesr_csr_east() #group "RR-5-ENSESR_CSR" for east or west ring node NOT B40
-
-                    policy_remove()
-
-
-                    
-                    # B40-02 changes in a new file
-                    sys.stdout = open(folder + '/' + name +'_B40-02.txt','w')
-                    b40_02_changes_ixre(system_ip, name)
-                    b40_02_rollback_ixre(system_ip, name)
-        
-                # BOF config changes
-                sys.stdout = open(folder + '/' + name +'_bof.cfg','w')
-                create_bof(old_statics)
-    
-        
-                # Post checks file generation
-                sys.stdout = open(folder + '/' + name +'_Post_Checks.txt','w')
-                pre_post_b40()
-                os.chdir("..")  # Move up one directory
-
-    #---------------------------------------------------------------------------------------------------------
-        else:
-            
-
-    # FROM group "RR-5-ENSESR" 121 TO group "RR-5-ENSESR_SPOKE" 135
-            if csr_spoke:        #and len(is_csr_spoke)>=1
-                policy_RR_5_ENSESR_SPOKE()
-                del_rr_5_ensesr()
-                extract_neighbors(my_file_pd) #group "RR-5-ENSESR" for spoke nodes on ring IRR
-                rr_5_ensesr_spoke_IRR(spoke_bgp_neighbors)
-            
-    
-    # FROM group "RR-5-ENSESR-CLIENT" 121 to group "RR-5-ENSESR_IRR" 135
-            if spoke_exists:
-                extract_spoke_neighbors(my_file_pd)
-                policy_RR_5_ENSESR_IRR() # for ring node IRR() # policy for the CSR non spoke ixre	    
-                del_rr_5_ensesr_IRR()
-                rr_5_csr_end_spoke_IRR(csr_spoke_bgp_neighbors) # group "RR-5-ENSESR_CSR" for non spoke csr neighbors 
-                               
-        #----------------------------------------------------------------------------------------------------------
-            policy_remove()
-            # BOF config changes
-            sys.stdout = open(folder + '/' + name +'_bof.cfg','w')
+#-----------------------------------    BOF and post checks     ----------------------------------------------------------#
+            sys.stdout = open(folder + '/' + name + '_bof.cfg', 'w')
+            bof_data()
             create_bof(old_statics)
-    
-        
-            # Post checks file generation
-            sys.stdout = open(folder + '/' + name +'_Post_Checks.txt','w')
-            pre_post_b40()
-            os.chdir("..")  # Move up one directory
-    
-    #-------------------------------------------------------------------------------
+
+            sys.stdout = open(folder + '/' + name + '_Post_Checks.txt', 'w')
+            post_checks()
+            extract_vprn_info(my_file_pd)
+
+            os.chdir(cwd)  # up directory
+
+        except Exception as e:
+            # Log the error
+            #logging.error(f"Error processing file {items}: {e}")
+            continue  # skip to  next item in the for loop
 
 
+
+
+
+
+# In[22]:
 
 
 if __name__ == "__main__":
+    if check_for_update():
+        restart_script()
     main()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 
