@@ -25,9 +25,9 @@ from itertools import islice
 
 
 # Check version from Github
-GITHUB_FILE_URL = 'https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/Hub-Spoke/HubSpoke_121to135LLD.py'
+GITHUB_FILE_URL = "https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/Hub-Spoke/HubSpoke_121to135LLD.py"
 cwd = os.getcwd()
-LOCAL_FILE_PATH  = os.path.join(cwd, 'HubSpoke_121to135LLD.py') # Path for the current script file
+LOCAL_FILE_PATH  = os.path.join(cwd, "HubSpoke_121to135LLD.py") # Path for the current script file
 print(cwd)
 def get_remote_file_content(url):
     response = requests.get(url)
