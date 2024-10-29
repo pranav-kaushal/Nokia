@@ -23,9 +23,15 @@ from itertools import islice
 
 
 # Check version from Github
+<<<<<<< HEAD
 GITHUB_FILE_URL = 'https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/Ring/Ring_121to135LLD.py'
 cwd = os.getcwd()
 LOCAL_FILE_PATH  = os.path.join(cwd, 'Ring_121to135LLD.py') # Path for the current script file
+=======
+GITHUB_FILE_URL = 'https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/Ring/121to135LLD_Ring.py'
+cwd = os.getcwd()
+LOCAL_FILE_PATH  = os.path.join(cwd, '121to135LLD_Ring.py') # Path for the current script file
+>>>>>>> 5bb40580b8251cd09774a6086a2d9f6e71010f7d
 print(cwd)
 def get_remote_file_content(url):
     response = requests.get(url)
@@ -36,14 +42,26 @@ def get_remote_file_content(url):
         return None
 
 def get_file_hash(content):
+<<<<<<< HEAD
     return hashlib.md5(content).hexdigest()
 
 def check_for_update():
+=======
+    """This will compute the hash of the file content to check for changes."""
+    return hashlib.md5(content).hexdigest()
+
+def check_for_update():
+    # Fetch latest version from GitHub
+>>>>>>> 5bb40580b8251cd09774a6086a2d9f6e71010f7d
     new_content = get_remote_file_content(GITHUB_FILE_URL)
     if not new_content:
         return False  # No update due to a fetch issue
     with open(LOCAL_FILE_PATH, "rb") as f:
         current_content = f.read()
+<<<<<<< HEAD
+=======
+    # Compares the hashes to check for update, if its required.
+>>>>>>> 5bb40580b8251cd09774a6086a2d9f6e71010f7d
     if get_file_hash(new_content) != get_file_hash(current_content):
         print("Update found! Updating script...")
         with open(LOCAL_FILE_PATH, "wb") as f:
@@ -2143,7 +2161,11 @@ def main():
             post_checks()
             extract_vprn_info(my_file_pd)
 
+<<<<<<< HEAD
             os.chdir(cwd)  # up directory
+=======
+            #os.chdir(cwd)  # up directory
+>>>>>>> 5bb40580b8251cd09774a6086a2d9f6e71010f7d
 
         except Exception as e:
             # Log the error
