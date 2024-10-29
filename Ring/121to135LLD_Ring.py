@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 1.08
+# Version 1.09
 
 import pandas as pd
 import os
@@ -2126,12 +2126,12 @@ def main():
             if bool(grp_rr_5_ENSESR) and not bool(has_B40)and not bool(grp_peer): # If it has no B40 and is a Ring node
                 policy_RR_5_ENSESR_CSR_IRR() # for CSR that is not a spoke
                 rr_5_ensesr_IRR() #group "RR-5-ENSESR-CLIENT" to east or west ring node NOT B40
-            if bool(grp_r5_enesr_client) and not bool(has_B40) and not bool(grp_peer):
+            if bool(grp_r5_enesr_client) and not bool(has_B40) and not bool(grp_peer) and bool(grp_rr_5_ENSESR):
                 policy_RR_5_ENSESR_CSR_SPOKE() # for ring spokes
                 rr_5_csr_ring_spoke() #group "RR-5-ENSESR_SPOKE" for spoke on ring nodes (policy "IMPORT_RR-5-ENSESR_CSR-SPOKE")
 
 #-----------------------------------    Spoke    ------------------------------------------------#
-            if bool(has_no_B40_but_spoke) and not bool(grp_rr_5_ENSESR):
+            if bool(grp_r5_enesr_client) and not bool(grp_rr_5_ENSESR) and not bool(grp_rr_5_ENSESR):
                 policy_RR_5_ENSESR_SPOKE_CSR() # for CSR that is not a spoke
                 rr_5_ensesr_spoke() #group "RR-5-ENSESR-CLIENT" for east or west ring node NOT B40
             
