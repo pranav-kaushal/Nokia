@@ -5,12 +5,13 @@
 
 
 # Import required libraries
-# Version 1.09
+# Version 1.10
 
 import pandas as pd
 import os
-import sys
 import re
+import sys
+import subprocess
 import requests
 import hashlib
 import logging
@@ -57,7 +58,8 @@ def check_for_update():
 
 def restart_script():
     print("Restarting script...")
-    os.execv(sys.executable, ['python'] + sys.argv)
+    subprocess.Popen([sys.executable] + sys.argv)
+    sys.exit()  # Close the current script
 
 
 # In[3]:
@@ -2158,7 +2160,8 @@ def main():
 if __name__ == "__main__":
     if check_for_update():
         restart_script()
-    main()
+    else:
+        main()
 
 
 # In[ ]:
