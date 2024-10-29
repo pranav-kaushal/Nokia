@@ -2,64 +2,64 @@
 # coding: utf-8
 
 # In[1]:
-import requests
-import hashlib
-import time
-import os
-
-# URL of the script to auto-update from
-SCRIPT_URL = "https://github.com/pranav-kaushal/Nokia/blob/52b98dfe09e7b5a12916fc509d3598a145eeeca9/NNI/New%20NNI_Hub%20spoke.py"
-LOCAL_SCRIPT_PATH = "New NNI_Hub spoke.py"
-CHECK_INTERVAL = 3600  # Time in seconds between checks (e.g., every hour)
-
-def get_remote_file_hash(url):
-    """Fetch the file content from the URL and compute its hash."""
-    response = requests.get(url)
-    if response.status_code == 200:
-        file_content = response.content
-        return hashlib.md5(file_content).hexdigest(), file_content
-    return None, None
-
-def load_local_file_hash(path):
-    """Compute the hash of the local file."""
-    if not os.path.exists(path):
-        return None
-    with open(path, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()
-
-def update_script(content):
-    """Overwrite the local script with new content."""
-    with open(LOCAL_SCRIPT_PATH, "wb") as f:
-        f.write(content)
-    print("Script updated successfully.")
-
-def auto_update_script():
-    while True:
-        print("Checking for updates...")
-        remote_hash, remote_content = get_remote_file_hash(SCRIPT_URL)
-        local_hash = load_local_file_hash(LOCAL_SCRIPT_PATH)
-        
-        if remote_hash and remote_hash != local_hash:
-            print("Update found! Downloading the new version...")
-            update_script(remote_content)
-        
-        time.sleep(CHECK_INTERVAL)  # Wait before checking again
-
-if __name__ == "__main__":
-    auto_update_script()
 
 
 # Import required libraries
+# Version 5.2b
+
 import pandas as pd
 import os
-import sys
 import re
+import sys
+import subprocess
+import requests
+import hashlib
 import logging
 from datetime import datetime
 from itertools import islice
 
 
 # In[2]:
+
+
+# Check version from Github
+GITHUB_FILE_URL = 'https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/NNI/NNI_121to135LLD.py'
+cwd = os.getcwd()
+LOCAL_FILE_PATH  = os.path.join(cwd, 'NNI_121to135LLD.py') # Path for the current script file
+print(cwd)
+def get_remote_file_content(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.content
+    else:
+        print(f"Failed to retrieve file. Status code: {response.status_code}")
+        return None
+
+def get_file_hash(content):
+    return hashlib.md5(content).hexdigest()
+
+def check_for_update():
+    new_content = get_remote_file_content(GITHUB_FILE_URL)
+    if not new_content:
+        return False  # No update due to a fetch issue
+    with open(LOCAL_FILE_PATH, "rb") as f:
+        current_content = f.read()
+    if get_file_hash(new_content) != get_file_hash(current_content):
+        print("Update found! Updating script...")
+        with open(LOCAL_FILE_PATH, "wb") as f:
+            f.write(new_content)
+        return True
+    else:
+        print("No update found.")
+        return False
+
+def restart_script():
+    print("Restarting script...")
+    subprocess.Popen([sys.executable] + sys.argv)
+    sys.exit()  # Close the current script
+
+
+# In[3]:
 
 
 def scan_file():
@@ -74,7 +74,7 @@ def scan_file():
     return (my_files, cwd)
 
 
-# In[3]:
+# In[4]:
 
 
 # Create a list of path for all the scanned files above.
@@ -87,7 +87,7 @@ def all_files():
     return path
 
 
-# In[4]:
+# In[5]:
 
 
 # Read the contents and extract the file name
@@ -129,7 +129,7 @@ def create_pd():
         
 
 
-# In[5]:
+# In[6]:
 
 
 def get_bof(data):
@@ -196,7 +196,7 @@ def create_bof(old_statics):
         print("/bof no", routes)
 
 
-# In[6]:
+# In[7]:
 
 
 # Get the interfaces for which the metric has to be changed.
@@ -260,7 +260,7 @@ def metric_interface_nni(): # Interface output
     print('')
 
 
-# In[7]:
+# In[8]:
 
 
 ####### Search the existing HUB policy with LL and NON LL b40 ips    ###################
@@ -315,7 +315,7 @@ def extract_LL_bgp_neighbors(data, start_key, end_key, find_value):
 #--------------------------------------------------
 
 
-# In[8]:
+# In[9]:
 
 
 ####### Create the new HUB policy with LL and NON LL b40 ips    ###################
@@ -393,7 +393,7 @@ def print_bgp_ll_neighbors(neighbors, start_key, old_import_policy, new_group, n
 		print('exit all')
 
 
-# In[9]:
+# In[10]:
 
 
 def print_bgp_ll_neighbors_7705(neighbors, start_key, old_import_policy, new_group, new_description, new_import_policy):
@@ -476,7 +476,7 @@ def print_bgp_ll_neighbors_7705(neighbors, start_key, old_import_policy, new_gro
 				print('exit all')
 
 
-# In[10]:
+# In[11]:
 
 
 def extract_vprn_info(data):
@@ -543,7 +543,7 @@ def extract_vprn_info(data):
 
 
 
-# In[11]:
+# In[12]:
 
 
 def extract_bgp_neighbors(data, start_key, end_key, find_value):
@@ -687,7 +687,7 @@ def new_7705_bgp_group(neighbors, new_group, new_description,cluster_value, star
     print('#--------------------------------------------------')
 
 
-# In[12]:
+# In[13]:
 
 
 def bgp_rem_config():
@@ -702,7 +702,7 @@ def bgp_rem_config():
     print('##---------------------------------------------------------')
 
 
-# In[13]:
+# In[14]:
 
 
 ######################## Groups for IXRE HUb - IXRE Spoke ###########################
@@ -785,7 +785,7 @@ def RR_5_L3VPN_CSR(): # IXRE spoke Facing IXRE HUB
 
 
 
-# In[14]:
+# In[15]:
 
 
 def L3VPN_CSR_SPOKE_7705(): # IXRE hub Facing 7705 Spoke
@@ -802,7 +802,7 @@ def L3VPN_CSR_SPOKE_7705(): # IXRE hub Facing 7705 Spoke
 	new_7705_bgp_group(neighbors,new_group, new_description,cluster_value, start_key, old_import_policy, new_import_policy)
 
 
-# In[15]:
+# In[16]:
 
 
 # Standalone IXRE policy config
@@ -1180,7 +1180,7 @@ def csr_osw_l3vpn_policy(my_file_pd):
     
 
 
-# In[16]:
+# In[17]:
 
 
 #######################    7705 policies    ###############################
@@ -1485,7 +1485,7 @@ def policy_RR_5_L3VPN_SPOKE_CSR():
 ####################################################################
 
 
-# In[17]:
+# In[18]:
 
 
 # B40 group change and check interface to 1000000
@@ -1578,7 +1578,7 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
-# In[18]:
+# In[19]:
 
 
 def del_policy_ixre():
@@ -1608,7 +1608,7 @@ def del_policy_ixre():
     print('/admin save')
 
 
-# In[19]:
+# In[20]:
 
 
 def pre_checks():
@@ -1686,7 +1686,7 @@ def post_checks():
     print ('')
 
 
-# In[20]:
+# In[21]:
 
 
 # B40 group change and check interface to 1000000
@@ -1736,7 +1736,7 @@ def b40_02_changes_ixre(system_ip, name):
 ############################################################################################################################
 
 
-# In[21]:
+# In[22]:
 
 
 def b40_bgp_conf(folder):
@@ -1754,7 +1754,7 @@ def b40_bgp_conf(folder):
             b40_02_rollback_ixre(system_ip, name)
 
 
-# In[22]:
+# In[23]:
 
 
 import os
@@ -1852,11 +1852,14 @@ def main():
 
 
 
-# In[23]:
+# In[24]:
 
 
 if __name__ == "__main__":
-    main()
+    if check_for_update():
+        restart_script()
+    else:
+        main()
 
 
 # In[ ]:
