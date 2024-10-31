@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.3
+# Version 5.4
 
 import pandas as pd
 import os
@@ -1786,7 +1786,7 @@ def main():
     for items in path:
         try:
             create_pd()
-            print(name)
+            # print(name)
             # IXRE policies for HUB, spoke
             csr_ixre_grp = my_file_pd.index[my_file_pd['config'].str.contains('group "RR-5-ENSESR-CLIENT"')].tolist()  # to B40 or AL or HUB
             csr_ixre_al = my_file_pd.index[my_file_pd['config'].str.contains('import "IMPORT_RR-5-ENSESR-CLIENT"')].tolist()  # to B40 or AL or HUB
