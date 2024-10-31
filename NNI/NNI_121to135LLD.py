@@ -558,8 +558,16 @@ def extract_vprn_info(data):
 def extract_bgp_neighbors(data, start_key, end_key, find_value):
     global return_value, cluster
     return_value = {}
-    cluster = None
-
+    try:
+        cluster = None
+        local_cluster = my_file_pd.index[my_file_pd['config'].str.contains('cluster')].tolist()
+        if local_cluster:
+            cluster = my_file_pd['config'][local_cluster[0]].split()[1]
+        else:
+            print('')
+    except Exception as e:
+        print('# No Cluster found')
+    
     try:
         group_start_idx = data[data['config'].str.contains(start_key)].index[0]
         group_end_idx_candidates = data[data['config'].str.contains(r'group ')].index.tolist()
@@ -574,8 +582,8 @@ def extract_bgp_neighbors(data, start_key, end_key, find_value):
             line = data.at[i, 'config'].strip()
 
             # Capture the cluster value if it exists
-            if line.startswith('cluster'):
-                cluster = line.split()[1]  # Store the cluster IP
+            #if line.startswith('cluster'):
+             #   cluster = line.split()[1]  # Store the cluster IP
                 #print(f"Cluster: {cluster}")
             if line.startswith('neighbor'):
                 in_neighbor_block = True
@@ -643,11 +651,26 @@ def new_bgp_group(new_group, new_description,cluster_value, return_value, start_
 ################ include local-as 
 ##### for BGP group of 7705
 
-def new_7705_bgp_group(neighbors, new_group, new_description,cluster_value, start_key, old_import_policy, new_import_policy):
+def new_7705_bgp_group(neighbors, new_group, new_description, start_key, old_import_policy, new_import_policy):
     try:
-        local_as = my_file_pd['config'][ my_file_pd.index[my_file_pd['config'].str.contains('local-as')].tolist()[0]].split()[1]
-    except:
+        local_as_indices = my_file_pd.index[my_file_pd['config'].str.contains('local-as')].tolist()
+        #local_as = my_file_pd['config'][ my_file_pd.index[my_file_pd['config'].str.contains('local-as')].tolist()[0]].split()[1]
+        if local_as_indices:
+            local_as = my_file_pd['config'][local_as_indices[0]].split()[1]
+            #print(f'peer-as {local_as}')
+        else:
+            print('')
+    except Exception as e:
         print('# No Local-As found')
+    try:
+        cluster_value = None
+        local_cluster = my_file_pd.index[my_file_pd['config'].str.contains('cluster')].tolist()
+        if local_cluster:
+            cluster_value = my_file_pd['config'][local_cluster[0]].split()[1]
+        else:
+            print('')
+    except Exception as e:
+        print('# No Cluster found')
 
     print('##---------------------------------------------------------')        
     print('######-----       Delete Old BGP Group      -------######')
@@ -679,8 +702,10 @@ def new_7705_bgp_group(neighbors, new_group, new_description,cluster_value, star
         print('                cluster {}'.format(cluster_value))
     print ('                import "{}"'.format(new_import_policy))
     print ('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
-    print ('                local-as {}'.format(local_as))
-    print ('                peer-as {}'.format(local_as))
+    if local_as_indices:
+            local_as = my_file_pd['config'][local_as_indices[0]].split()[1]
+            print ('                local-as {}'.format(local_as))
+            print ('                peer-as {}'.format(local_as))
     print('                advertise-inactive')
     print ('                bfd-enable')
     print ('                aigp')
@@ -697,21 +722,6 @@ def new_7705_bgp_group(neighbors, new_group, new_description,cluster_value, star
 
 
 # In[13]:
-
-
-def bgp_rem_config():
-    print('##---------------------------------------------------------')        
-    print('######-----       BGP Group Changes         -------######')
-    print('##---------------------------------------------------------')
-    #print('/configure router bgp no family')
-    print('/configure router bgp no bfd-enable')
-    print('/configure router bgp add-paths')
-    if '7250' in router_type:
-        print('/configure router bgp error-handling update-fault-tolerance')
-    print('##---------------------------------------------------------')
-
-
-# In[14]:
 
 
 ######################## Groups for IXRE HUb - IXRE Spoke ###########################
@@ -790,8 +800,23 @@ def RR_5_L3VPN_CSR(): # IXRE spoke Facing IXRE HUB
 	new_import_policy = 'IMPORT_RR-5-L3VPN_SPOKE-CSR'
 # Extract neighbors and cluster
 	neighbors, cluster_value = extract_bgp_neighbors(data, start_key, end_key, find_value)
-	new_7705_bgp_group(new_group, new_description,cluster_value, return_value, start_key, old_import_policy, new_import_policy)
+	new_7705_bgp_group(neighbors, new_group, new_description, start_key, old_import_policy, new_import_policy)
 
+
+
+# In[14]:
+
+
+def bgp_rem_config():
+    print('##---------------------------------------------------------')        
+    print('######-----       BGP Group Changes         -------######')
+    print('##---------------------------------------------------------')
+    #print('/configure router bgp no family')
+    print('/configure router bgp no bfd-enable')
+    print('/configure router bgp add-paths')
+    if '7250' in router_type:
+        print('/configure router bgp error-handling update-fault-tolerance')
+    print('##---------------------------------------------------------')
 
 
 # In[15]:
@@ -808,7 +833,7 @@ def L3VPN_CSR_SPOKE_7705(): # IXRE hub Facing 7705 Spoke
 	new_import_policy = 'IMPORT_RR-5-L3VPN_CSR-SPOKE'
 # Extract neighbors and cluster
 	neighbors, cluster_value = extract_bgp_neighbors(data, start_key, end_key, find_value)
-	new_7705_bgp_group(neighbors,new_group, new_description,cluster_value, start_key, old_import_policy, new_import_policy)
+	new_7705_bgp_group(neighbors, new_group, new_description, start_key, old_import_policy, new_import_policy)
 
 
 # In[16]:
@@ -1794,6 +1819,7 @@ def main():
 
     for items in path:
         try:
+            os.chdir(cwd)
             create_pd()
             # print(name)
             # IXRE policies for HUB, spoke
