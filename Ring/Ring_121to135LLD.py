@@ -275,41 +275,6 @@ def extract_vprn_info(data):
 # In[9]:
 
 
-# Get the interfaces for which the metric has to be changed.
-def metric_int(data):
-    global metric_interface
-    metric_interface = {}
-    try:
-        # Find the start of the group "RR-5-ENSESR"
-        group_start_idx = data[data['config'].str.fullmatch('router Base')].index[0] #Find the index of the line containing 'group "RR-5-ENSESR"'.
-        
-        # Loop through the subsequent lines to find neighbors and descriptions
-        in_neighbor_block = False #Use a flag in_neighbor_block to track if we are within a neighbor block.
-        interface_desc = None
-    
-        for i in range(group_start_idx + 1, len(data)):
-            line = data.at[i, 'config'].strip()
-            
-            if line.startswith('interface'):
-                in_neighbor_block = True
-                interface_desc = line.split()[1]
-            elif line.startswith('description') and in_neighbor_block:
-                description = line.split(' ', 1)[1].strip('"')
-                if 'B40' in description:  # Check if description does not contain "B40"
-                    metric_interface[interface_desc] = description
-                in_neighbor_block = False
-            elif line == 'exit':
-                in_neighbor_block = False
-    except IndexError:
-        print("No B40 interface was found")
-    #for interface_desc, description in metric_interface.items():
-     #   print('/configure router isis 5 {} level 1 metric 1000000'.format(interface_desc))
-    return metric_interface
-
-
-# In[10]:
-
-
 # This is only for the node which is connected to B40, it will check for CSR connected to it and the spokes in the ring.
 # So only looking for group "RR-5-ENSESR.
 
@@ -442,7 +407,7 @@ def RR_5_ENSESR_IRRE_CSR():
 
 
 
-# In[11]:
+# In[10]:
 
 
 def extract_spoke_neighbors(data, start_key, find_value):
@@ -555,7 +520,7 @@ def rr_5_ensesr_spoke(): # This group and policies are for the spoke only
 	new_spoke_bgp_group(new_group, new_description, csr_sp_neighbors ,cluster, start_key, old_import_policy, new_import_policy)
 
 
-# In[12]:
+# In[11]:
 
 
 # --- This is non B40 ring router
@@ -660,7 +625,7 @@ def rr_5_ensesr_csr_peer_east():
 
 
 
-# In[13]:
+# In[12]:
 
 
 #--- This is non B40 ring router
@@ -762,7 +727,7 @@ def rr_5_ensesr_ebh_east():
     add_b40_neighbors(new_description, start_key, b40_neighbors, new_import_policy, new_group, old_import_policy)
 
 
-# In[14]:
+# In[13]:
 
 
 def policy_bgp():
@@ -834,7 +799,7 @@ def policy_remove():
     print('        exit all')
 
 
-# In[15]:
+# In[14]:
 
 
 # Create a function to print all the required bof routes to be added and deleted
@@ -862,7 +827,7 @@ def create_bof(old_statics):
         print("/bof no", routes)
 
 
-# In[16]:
+# In[15]:
 
 
 def policy_RR_5_ENSESR_IRRW_CSR():
@@ -1795,14 +1760,52 @@ def policy_RR_5_ENSESR_CSR_IRR():
     print ('        exit')
 
 
-# In[17]:
+# In[16]:
 
 
-def site_int():
+# Get the interfaces for which the metric has to be changed.
+def metric_int_hub(data):
+    global metric_interface_b40, metric_interface_b4c
+     
+    metric_interface_b40 = {}
+    metric_interface_b4c = {}
+    try:
+        # Find the start of search keyword
+        group_start_idx = data[data['config'].str.match('echo "Router')].index[0] 
+        group_end_idx = data[data['config'].str.match('echo "MPLS')].index[0]
+        
+        in_neighbor_block = False #Use a flag in_neighbor_block to track if we are within a neighbor block.
+        interface_desc = None
+    
+        for i in range(group_start_idx, group_end_idx):
+            line = data.at[i, 'config'].strip()
+            if line.startswith('interface'):
+                in_neighbor_block = True
+                interface_desc = line.split()[1]
+                if '1/1/c' in interface_desc:
+                    metric_interface_b40[interface_desc] = description
+            elif line.startswith('description') and in_neighbor_block:
+                description = line.split(' ', 1)[1].strip('"')
+                if 'B4C' in description:  # 
+                    metric_interface_b4c[interface_desc] = description
+                if 'B40' in description:  # Check if description does contain "B40"
+                    metric_interface_b40[interface_desc] = description
+                in_neighbor_block = False
+            elif line == 'exit':
+                in_neighbor_block = False
+    except IndexError:
+        print("# No B40/B4C interface was found, Please check the config manually")
+
+    return metric_interface_b40, metric_interface_b4c
+# check for type fp if its not type fp then change it to type fp
+
+def site_int(): # Interface output 
+    metric_interface_b40, metric_interface_b4c = metric_int_hub(my_file_pd)
+    #print(metric_interface_b40, metric_interface_b4c)
     # B40 01 and 02 file for isis metric and bgp neighbor to a new group and delete neighbor from existing group.
     #print(b40facinginterface)
     print('########### Following info is Just to verify the interface and  system info ############')
-    print('# System Name: {}", "system ip: {}",  '.format(name, system_ip))
+    print('# System Name: {}, System IP: {}, Router Type {} '.format(name, system_ip, router_type))
     print('########################################################################################')
     print('')
     print('#### PLEASE LOGIN TO THE ROUTER USING point to point ip address, so as not to loose the connectivity when BGP is down. #####')
@@ -1814,29 +1817,126 @@ def site_int():
         print("# This router has ecmp value of 2, please change it to ecmp 1")
         print('#--------------------------------------------------')
         print('/configure router ecmp 1')
-    print('#--------------------------------------------------')
-    print('# New Interface Configuration')
-    print('#--------------------------------------------------')
+    print('/configure system resource ecmp-profile 1 ip links 4 groups 1024')
+    print('/configure system resource ecmp-profile 2 mpls links 4 groups 1023')
+    print('#--------------------------------------------------------#')        
+    print('######-----  Change ISIS interface metric   -------######')
+    print('#--------------------------------------------------------#')
     print('')
-    for interface_desc, description in metric_interface.items():
-        print('/configure router isis 5 {} level 1 metric 1000000'.format(interface_desc))
-    print('')
-    print('/configure router interface "system" bfd 100 receive 100 multiplier 3')
-    print('')
-    print('#--------------------------------------------------')
-    print('# Update ISIS 5 overload timout')
-    print('#--------------------------------------------------')
-    print('')    
     print('/configure router isis 5 overload-on-boot timeout 180')
-    print('/configure port 1/1/24 ethernet speed 1000')
+    if '7250' in router_type:
+        print('/configure port 1/1/24 ethernet speed 1000')
     print('')
-    #print('/configure router bgp shutdown')
-    #print('/configure router no bgp')
-    #print(b40_name
+    for interface_desc, description in metric_interface_b4c.items():
+        print('/configure router isis 5 interface {} level 1 metric 10'.format(interface_desc))
+        print('/configure router interface {} egress vlan-qos-policy "40011"'.format(interface_desc))
+        print('/configure router interface {} ingress qos "40021"'.format(interface_desc))
+        print('/configure router interface {} egress egress-remark-policy "40021"'.format(interface_desc))
+        print('/configure router interface {} bfd 50 receive 50 multiplier 5 type fp'.format(interface_desc))
+        print('#--------------------------------------------------------#')
+        
+    for interface_desc, description in metric_interface_b40.items():
+        #print(interface_desc, description, found_interface)
+        if found_interface[0] not in interface_desc:
+            print('/configure router isis 5 interface {} level 1 metric 1000000'.format(interface_desc))
+        if found_interface[0] in interface_desc:
+            print('/configure router isis 5 interface {} level 1 metric 800'.format(interface_desc))
+
+    if found_interface:
+        for ints in found_interface:
+            print('')
+            print('/configure router interface {} no bfd 50 receive 50 multiplier 5'.format(ints))
+
+
+# In[17]:
+
+
+def port_b4c(data):
+    global port_b4c_conf
+    port_b4c_conf = {}
+    try:
+        # Find the start of search keyword
+        group_start_idx = data[data['config'].str.contains('echo "Port ')].index[0] 
+        group_end_idx = data[data['config'].str.contains('echo "System Sync-If')].index[0]
+        
+        # Loop through the subsequent lines to find ports and descriptions
+        in_port_block = False
+        port_desc = None
     
+        for i in range(group_start_idx, group_end_idx):
+            line = data.at[i, 'config'].strip()
+            
+            if line.startswith('port'):  # Identifying port lines
+                in_port_block = True
+                port_desc = line.split()[1]  # Extract the port ID
+            elif line.startswith('description') and in_port_block:  # Check for description in the port block
+                description = line.split(' ', 1)[1].strip('"')
+                if 'B40' in description or 'B4C' in description:
+                    #if 'MG' in description or 'Mg' in description or 'Manag' in description:
+                    port_b4c_conf[port_desc] = description
+            elif line == 'exit':  # Reset when block ends
+                in_port_block = False
+        print('#--------------------------------------------------------#')
+        print('#--------              Port changes          ------------#')
+        print('#--------------------------------------------------------#')
+        print('# Before you make changes please check port description for correct router #')
+        for port_desc, description in port_b4c_conf.items():
+            #print(port_desc, description)
+            print('')
+            if '1/1/c' in description:
+                print('#port {} '.format(description))
+                print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
+                print('')
+            else:
+                print('#port {} '.format(description))
+                print('/configure port {} ethernet util-stats-interval 30'.format(port_desc))
+                print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
+                print('')
+        
+    except IndexError:
+        print("# No MGMT port was found, please check the config manually")
+    return port_b4c_conf
 
 
 # In[18]:
+
+
+def find_unnumbered_int(data):
+    global found_interface, found_unnumbered
+    group_start_idx = data[data['config'].str.contains('echo "Router')].index[0]
+    group_end_idx = data[data['config'].str.contains('echo "MPLS Label')].index[0]
+
+    found_interface = []
+    found_unnumbered = False 
+
+    # Loop through the DataFrame between start and end indices, from end to start
+    for i in range(group_end_idx - 1, group_start_idx - 1, -1):
+        line = data.at[i, 'config'].strip()
+        if line.startswith('unnumbered'):
+            found_unnumbered = True 
+        elif found_unnumbered and line.startswith('interface'):
+            found_port = line.split()[1]  # get the port
+            found_interface.append(found_port)
+            found_unnumbered = False  # reset flag
+
+    #if found_interface:
+     #   for ints in found_interface:
+      #      print('/configure router interface {} no bfd 50 receive 50 multiplier 5'.format(ints))
+    #else:
+     #   print("# No unnumbered port found, check config manually for B40 port")
+
+    return found_interface, found_unnumbered
+
+# Call the function on your DataFrame
+#scan_file()
+#all_files()
+#for items in path:
+#    create_pd()
+#    unnumbered_ports = find_unnumbered_int(my_file_pd)
+#    print(f"Ports with unnumbered: {unnumbered_ports}")
+
+
+# In[19]:
 
 
 def new_qos():
@@ -1889,13 +1989,13 @@ def new_qos():
     print('        exit all')
 
 
-# In[19]:
+# In[20]:
 
 
 # B40 group change and check interface to 1000000
 
 def b40_01_changes_ixre(system_ip, name):
-    print ('###Remove neighbor from 121 bgp group ONLY after adding the bgp on B40-01 and 02')
+    print ('### Remove neighbor from 121 bgp group')
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR" no neighbor {}'.format(system_ip))
     print ('exit all')
@@ -1916,7 +2016,7 @@ def b40_01_changes_ixre(system_ip, name):
 
 
 def b40_02_changes_ixre(system_ip, name):
-    print ('###Remove neighbor from 121 bgp group after you have brought up 135 BGP neigh on B40-01 and 02')
+    print ('###Remove neighbor from 121 bgp group')
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR" no neighbor {}'.format(system_ip))
     print ('exit all')
@@ -1982,7 +2082,7 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
-# In[20]:
+# In[21]:
 
 
 # Post check ping check script / 
@@ -2009,44 +2109,27 @@ def pre_post_b40():
         print('ping router-instance "CELL_MGMT" {}'.format(mgm.split('/', 1)[0][8:]))
 
 
-# In[21]:
-
-
-def find_unnumbered_int(data):
-    global found_interface
-    group_start_idx = data[data['config'].str.contains('echo "Router')].index[0]
-    group_end_idx = data[data['config'].str.contains('echo "MPLS Label')].index[0]
-
-    found_interface = []
-    found_unnumbered = False 
-
-    # Loop through the DataFrame between start and end indices, from end to start
-    for i in range(group_end_idx - 1, group_start_idx - 1, -1):
-        line = data.at[i, 'config'].strip()
-        if line.startswith('unnumbered'):
-            found_unnumbered = True 
-        elif found_unnumbered and line.startswith('interface'):
-            found_port = line.split()[1]  # get the port
-            found_interface.append(found_port)
-            found_unnumbered = False  # reset flag
-
-    if found_interface:
-        print(f"Ports with unnumbered: {found_interface}")
-    else:
-        print("No unnumbered port found")
-
-    return found_interface
-
-# Call the function on your DataFrame
-#scan_file()
-#all_files()
-#for items in path:
-#    create_pd()
-#    unnumbered_ports = find_unnumbered_int(my_file_pd)
-#    print(f"Ports with unnumbered: {unnumbered_ports}")
-
-
 # In[22]:
+
+
+# Post check ping check script / 
+def post_checks():
+    print ('')
+    print ('#--------------------------------------------------')
+    print ('# Local router post checks "')
+    print ('#--------------------------------------------------')
+    print ('show service sap-using')
+    print ('show port A/gnss')
+    print ('show system ptp port')
+    print ('show router 1 interface')
+    print ('show router 4 interface')
+    print('show router isis 5 interface ')
+    print ('show router policy')
+    print ('show router bgp summary')
+    print ('')
+
+
+# In[23]:
 
 
 def main():
@@ -2080,8 +2163,10 @@ def main():
 
             # IXRE config changes based on policies
             sys.stdout = open(folder + '/' + name + '_LLD135.cfg', 'w')
-            metric_int(my_file_pd)
-            site_int()              
+            find_unnumbered_int(my_file_pd)
+            site_int()
+            new_qos()
+            port_b4c(my_file_pd)
             policy_bgp()
 
     #----------------------------------------------------------------------
@@ -2151,7 +2236,7 @@ def main():
             continue  # skip to  next item in the for loop
 
 
-# In[23]:
+# In[24]:
 
 
 if __name__ == "__main__":
