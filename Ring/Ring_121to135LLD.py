@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 1.10
+# Version 1.11
 
 import pandas as pd
 import os
@@ -315,7 +315,9 @@ def extract_neighbors(data, start_key):
     
     return spoke_bgp_neighbors, csr_bgp_neighbors, cluster
 
-def add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster):
+def delete_spoke_csr_bgp_neighbors():
+    start_key = 'group "RR-5-ENSESR"' #(Old group name)
+    old_import_policy = 'IMPORT_RR-5-ENSESR'
     print('#---------------------------------------------------------')        
     print('######-----       Delete Old BGP Group      -------######')
     print('#---------------------------------------------------------')
@@ -331,6 +333,10 @@ def add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_descr
     print ('        exit')
     print ('exit all')
     print('')
+
+
+def add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_description,new_import_policy, neighbors, cluster):
+
     print('##---------------------------------------------------------')        
     print('######-----        Add New BGP Group        -------######')
     print('##---------------------------------------------------------')
@@ -357,7 +363,7 @@ def add_spoke_csr_bgp_neighbors(start_key,old_import_policy,new_group, new_descr
 # Print all the spoke nodes under Old group "RR-5-ENSESR"
 def RR_5_ENSESR_IRRW_SPOKE():  #(tested)
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    old_import_policy = 'IMPORT_RR-5-ENSESR'
     find_value = 'B4C'
     new_group = 'group "RR-5-ENSESR_SPOKE"'
     new_description = 'Neighbor group for EVPN SPOKE' 
@@ -369,7 +375,7 @@ def RR_5_ENSESR_IRRW_SPOKE():  #(tested)
 
 def RR_5_ENSESR_IRRW_CSR():  #(tested)
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    old_import_policy = 'IMPORT_RR-5-ENSESR'
     find_value = 'B4C'
     new_group = 'group "RR-5-ENSESR_CSR"'
     new_description = 'Neighbor group for EVPN CSR' 
@@ -384,7 +390,7 @@ def RR_5_ENSESR_IRRW_CSR():  #(tested)
 # Print all the spoke nodes under Old group "RR-5-ENSESR"
 def RR_5_ENSESR_IRRE_SPOKE():
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    old_import_policy = 'IMPORT_RR-5-ENSESR'
     find_value = 'B4C'
     new_group = 'group "RR-5-ENSESR_SPOKE"'
     new_description = 'Neighbor group for EVPN SPOKE' 
@@ -396,7 +402,7 @@ def RR_5_ENSESR_IRRE_SPOKE():
 
 def RR_5_ENSESR_IRRE_CSR():
     start_key = 'group "RR-5-ENSESR"' #(Old group name)
-    old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+    old_import_policy = 'IMPORT_RR-5-ENSESR'
     find_value = 'B4C'
     new_group = 'group "RR-5-ENSESR_CSR"'
     new_description = 'Neighbor group for EVPN CSR' 
@@ -606,7 +612,7 @@ def rr_5_ensesr_csr_peer_west():
 	old_import_policy = 'IMPORT_RR-5-PEER'
 	find_value = 'B4C'
 	new_group = 'group "RR-5-ENSESR_IRR"'
-	new_description = 'Neighbor group for EVPN IRR' 
+	new_description = 'IRR-W to IRR-E' 
 	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-IRR' 
     # Extract neighbors and cluster
 	ring_neighbors, cluster = extract_ring_neighbors(my_file_pd, start_key, find_value)
@@ -617,7 +623,7 @@ def rr_5_ensesr_csr_peer_east():
 	old_import_policy = 'IMPORT_RR-5-PEER'
 	find_value = 'B4C'
 	new_group = 'group "RR-5-ENSESR_IRR"'
-	new_description = 'Neighbor group for EVPN IRR' 
+	new_description = 'IRR-E to IRR-W' 
 	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-IRR' 
     # Extract neighbors and cluster
 	ring_neighbors, cluster = extract_ring_neighbors(my_file_pd, start_key, find_value)
@@ -748,55 +754,18 @@ def policy_bgp():
     print ('        exit all')
 
 
-def policy_remove():
-    print ('#--------------------------------------------------')
-    print ('# Remove Policy Configuration')
-    print ('#--------------------------------------------------')
-    print('/configure route policy-options')
-    print ('            begin')
-    print ('            {} no {}'.format(cmty_string[0],cmty_member ))
-    print ('                no {}'.format(cmty_string[0] ))
-    print ('            exit')
-    print ('            commit')
-    print ('        exit all')
-    print('#--------------------------------------------------')
-    print('## Cleaning LLD 1.2.1 policies ... ')
-    print('#--------------------------------------------------')
-    print('')
-    print('/configure route policy-options')
-    print('  begin')
-    print('    no policy-statement "LABEL_LOOPBACK0"')
-    print('    no policy-statement "EXPORT_RR-5-PEER"')
-    print('    no policy-statement "IMPORT_RR-5-PEER"')
-    print('    no policy-statement "EXPORT_RR-5-ENSESR"')
-    print('    no policy-statement "IMPORT_RR-5-ENSESR"')
-    print('    no policy-statement "EXPORT_RR-5-ENSESR-CLIENT"')
-    print('    no policy-statement "IMPORT_RR-5-ENSESR-CLIENT"')
-    print('  commit')
-    print('exit all')
-    print('')
-    print('#--------------------------------------------------')
-    print('## Cleaning LLD 1.2.1 prefix lists and communities ... ')
-    print('#--------------------------------------------------')
-    print('')
-    print('/configure route policy-options')
-    print('  begin')
-    print('    no prefix-list "Default-Routes"')
-    print('    no prefix-list "PRFX_LOCAL_SYSTEM_ADDRESS"')
-    print('  commit')
-    print('exit all')  
-    print('#--------------------------------------------------')
-    print('# Cleaning LLD 1.2.1 BGP groups ... ')
-    print('#--------------------------------------------------')
-    print('')
-    print('/configure router bgp')
-    print('    group "RR-5-ENSESR-CLIENT" shutdown')
-    print('    no group "RR-5-ENSESR-CLIENT"')
-    print('    group "RR-5-PEER" shutdown')
-    print('    no group "RR-5-PEER"')
-    print('    group "RR-5-ENSESR" shutdown')
-    print('    no group "RR-5-ENSESR"')
-    print('        exit all')
+def bgp_remove():
+    print('#---------------------------------------------------------#')        
+    print('######-----       BGP Changes                 -------######')
+    print('#---------------------------------------------------------#')
+    print('/configure router bgp no family')
+    print('/configure router bgp no bfd-enable')
+    #print('/configure router bgp selective-label-ipv4-install')
+    print('/configure router bgp rapid-update vpn-ipv4 vpn-ipv6 evpn label-ipv4')
+    print('/configure router bgp error-handling update-fault-tolerance')
+    print('/config router bgp no initial-send-delay-zero')
+    print('/exit all')
+    print('#---------------------------------------------------------#')
 
 
 # In[14]:
@@ -831,6 +800,8 @@ def create_bof(old_statics):
 
 
 def policy_RR_5_ENSESR_IRRW_CSR():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-CSR"')
@@ -917,9 +888,11 @@ def policy_RR_5_ENSESR_IRRW_CSR():
     print ('                exit')
     print ('            exit')
     print ('            commit')
-    print ('        exit')
+    print ('        exit all')
 #############################################################
 def policy_RR_5_ENSESR_IRRW_EBH():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-EBH"')
@@ -984,9 +957,11 @@ def policy_RR_5_ENSESR_IRRW_EBH():
     print ('                exit')
     print ('            exit')
     print ('            commit')
-    print ('        exit')
+    print ('        exit all')
 ####################################################################
 def policy_RR_5_ENSESR_IRRW_IRR():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-IRR"')
@@ -1053,10 +1028,12 @@ def policy_RR_5_ENSESR_IRRW_IRR():
     print ('                exit')
     print ('            exit')
     print ('            commit')
-    print ('        exit')
+    print ('        exit all')
 
 ####################################################################
 def policy_RR_5_ENSESR_IRRW_SPOKE():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-SPOKE"')
@@ -1143,12 +1120,14 @@ def policy_RR_5_ENSESR_IRRW_SPOKE():
     print ('                exit')
     print ('            exit')
     print ('            commit')
-    print ('        exit')
+    print ('        exit all')
 ####################################################################
 #################### RING EAST      ###########################
 ####################################################################
 
 def policy_RR_5_ENSESR_IRRE_CSR():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRE-CSR"')
@@ -1234,10 +1213,14 @@ def policy_RR_5_ENSESR_IRRE_CSR():
     print ('                default-action drop')
     print ('                exit')
     print ('            exit')
+    print ('            commit')
+    print ('        exit all')
 
 
 ########################################################################
 def policy_RR_5_ENSESR_IRRE_EBH():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRE-EBH"')
@@ -1302,9 +1285,13 @@ def policy_RR_5_ENSESR_IRRE_EBH():
     print ('                default-action accept')
     print ('                exit')
     print ('            exit')
+    print ('            commit')
+    print ('        exit all')
 
 ##############################################################################
 def policy_RR_5_ENSESR_IRRE_IRR():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRE-IRR"')
@@ -1370,9 +1357,13 @@ def policy_RR_5_ENSESR_IRRE_IRR():
     print ('                default-action accept')
     print ('                exit')
     print ('            exit')
+    print ('            commit')
+    print ('        exit all')
 
 #########################################################################
 def policy_RR_5_ENSESR_IRRE_SPOKE():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRE-SPOKE"')
@@ -1459,13 +1450,15 @@ def policy_RR_5_ENSESR_IRRE_SPOKE():
     print ('                exit')
     print ('            exit')
     print ('            commit')
-    print ('        exit')
+    print ('        exit all')
 
 
 ######################################################################################
 #################################### RING NODE      ##################################
 ######################################################################################
 def policy_RR_5_ENSESR_IRR():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_CSR-IRR"')
@@ -1536,6 +1529,8 @@ def policy_RR_5_ENSESR_IRR():
 ###########################################################################################
 
 def policy_RR_5_ENSESR_CSR_SPOKE():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_CSR-SPOKE"')
@@ -1622,10 +1617,14 @@ def policy_RR_5_ENSESR_CSR_SPOKE():
     print ('                exit')
     print ('            exit')
     print ('            commit')
-    print ('        exit')
+    print ('        exit all')
 
 ###########################################################################################
 def policy_RR_5_ENSESR_SPOKE_CSR():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
+    print ('        policy-options')
+    print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_SPOKE-CSR"')
     print ('                description "EXPORT ROUTES TO A CSR"')
     print ('                entry 5')
@@ -1689,9 +1688,12 @@ def policy_RR_5_ENSESR_SPOKE_CSR():
     print ('                exit')
     print ('            exit')
     print ('            commit')
+    print('          exit all')
 
 ###########################################################################################
 def policy_RR_5_ENSESR_CSR_IRR():
+    print ('#---------------New Policy Add------------------------')
+    print('/configure router bgp')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_CSR-IRR"')
@@ -1757,7 +1759,7 @@ def policy_RR_5_ENSESR_CSR_IRR():
     print ('                exit')
     print ('            exit')
     print ('            commit')
-    print ('        exit')
+    print ('        exit all')
 
 
 # In[16]:
@@ -1801,6 +1803,8 @@ def metric_int_hub(data):
 
 def site_int(): # Interface output 
     metric_interface_b40, metric_interface_b4c = metric_int_hub(my_file_pd)
+    has_B40 = my_file_pd.index[(my_file_pd['config'].str.contains('import "IMPORT_RR-5-ENSESR-CLIENT') & my_file_pd['config'].shift(-6).str.contains('description.*B40'))].tolist()
+    has_no_B40_but_spoke = my_file_pd.index[(my_file_pd['config'].str.fullmatch('import "IMPORT_RR-5-ENSESR-CLIENT"') & ~ my_file_pd['config'].shift(-6).str.contains('description.*B40', na=False))].tolist() 
     #print(metric_interface_b40, metric_interface_b4c)
     # B40 01 and 02 file for isis metric and bgp neighbor to a new group and delete neighbor from existing group.
     #print(b40facinginterface)
@@ -1835,12 +1839,13 @@ def site_int(): # Interface output
         print('/configure router interface {} bfd 50 receive 50 multiplier 5 type fp'.format(interface_desc))
         print('#--------------------------------------------------------#')
         
-    for interface_desc, description in metric_interface_b40.items():
+    if bool(has_B40):
+        for interface_desc, description in metric_interface_b40.items():
         #print(interface_desc, description, found_interface)
-        if found_interface[0] not in interface_desc:
-            print('/configure router isis 5 interface {} level 1 metric 1000000'.format(interface_desc))
-        if found_interface[0] in interface_desc:
-            print('/configure router isis 5 interface {} level 1 metric 800'.format(interface_desc))
+            if found_interface[0] not in interface_desc:
+                print('/configure router isis 5 interface {} level 1 metric 1000000'.format(interface_desc))
+            if found_interface[0] in interface_desc:
+                print('/configure router isis 5 interface {} level 1 metric 800'.format(interface_desc))
 
     if found_interface:
         for ints in found_interface:
@@ -1853,7 +1858,11 @@ def site_int(): # Interface output
 
 def port_b4c(data):
     global port_b4c_conf
+    has_B40 = my_file_pd.index[(my_file_pd['config'].str.contains('import "IMPORT_RR-5-ENSESR-CLIENT') & my_file_pd['config'].shift(-6).str.contains('description.*B40'))].tolist()
+    grp_rr_5_ENSESR = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR"')].tolist() #--- These are spokes and CSR 
+ 
     port_b4c_conf = {}
+
     try:
         # Find the start of search keyword
         group_start_idx = data[data['config'].str.contains('echo "Port ')].index[0] 
@@ -1869,8 +1878,6 @@ def port_b4c(data):
             if line.startswith('port'):  # Identifying port lines
                 in_port_block = True
                 port_desc = line.split()[1]  # Extract the port ID
-                if '1/1/c' in port_desc:
-                    port_b4c_conf[port_desc] = description
             elif line.startswith('description') and in_port_block:  # Check for description in the port block
                 description = line.split(' ', 1)[1].strip('"')
                 if 'B40' in description or 'B4C' in description or 'c3' in description:
@@ -1891,10 +1898,14 @@ def port_b4c(data):
                 print('/configure port {} ethernet util-stats-interval 30'.format(port_desc))
                 print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
                 print('')
-            if '1/1/c' in port_desc:
-                print('#port {} '.format(port_desc))
-                print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
-                print('')
+        
+        if bool(has_B40) or bool(grp_rr_5_ENSESR):
+            print('/configure port 1/1/c33/1 ethernet util-stats-interval 30')
+            print('/configure port 1/1/c33/1 ethernet egress-port-qos-policy "40012"'.format(port_desc))
+            print('')
+            print('/configure port 1/1/c34/1 ethernet util-stats-interval 30')
+            print('/configure port 1/1/c34/1 ethernet egress-port-qos-policy "40012"'.format(port_desc))
+            print('')
     except IndexError:
         print("# No MGMT port was found, please check the config manually")
     return port_b4c_conf
@@ -2169,6 +2180,7 @@ def main():
             site_int()
             new_qos()
             port_b4c(my_file_pd)
+            bgp_remove()
             policy_bgp()
 
     #----------------------------------------------------------------------
@@ -2181,6 +2193,8 @@ def main():
                     if bool(grp_rr_5_ENSESR):
                         spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
                         #print(spoke_bgp_neighbors, csr_bgp_neighbors)
+                        if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
+                            delete_spoke_csr_bgp_neighbors()
                         if len(spoke_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRW_SPOKE() # for west spokes
                             RR_5_ENSESR_IRRW_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke west neighbors
@@ -2194,6 +2208,8 @@ def main():
                     if bool(grp_rr_5_ENSESR):
                         spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
                         #print(spoke_bgp_neighbors, csr_bgp_neighbors)
+                        if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
+                            delete_spoke_csr_bgp_neighbors()
                         if len(spoke_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRE_SPOKE() # for east spokes
                             RR_5_ENSESR_IRRE_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke east neighbors
@@ -2217,7 +2233,7 @@ def main():
                 rr_5_csr_ring_spoke() #group "RR-5-ENSESR_SPOKE" for spoke on ring nodes (policy "IMPORT_RR-5-ENSESR_CSR-SPOKE")
 
 #-----------------------------------    Spoke    ------------------------------------------------#
-            if bool(grp_r5_enesr_client) and not bool(grp_rr_5_ENSESR) and not bool(grp_rr_5_ENSESR):
+            if bool(grp_r5_enesr_client) and not bool(grp_rr_5_ENSESR) and not bool(grp_peer):
                 policy_RR_5_ENSESR_SPOKE_CSR() # for CSR that is not a spoke
                 rr_5_ensesr_spoke() #group "RR-5-ENSESR-CLIENT" for east or west ring node NOT B40
             
