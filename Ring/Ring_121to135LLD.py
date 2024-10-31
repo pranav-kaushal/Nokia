@@ -1869,9 +1869,11 @@ def port_b4c(data):
             if line.startswith('port'):  # Identifying port lines
                 in_port_block = True
                 port_desc = line.split()[1]  # Extract the port ID
+                if '1/1/c' in port_desc:
+                    port_b4c_conf[port_desc] = description
             elif line.startswith('description') and in_port_block:  # Check for description in the port block
                 description = line.split(' ', 1)[1].strip('"')
-                if 'B40' in description or 'B4C' in description:
+                if 'B40' in description or 'B4C' in description or 'c3' in description:
                     #if 'MG' in description or 'Mg' in description or 'Manag' in description:
                     port_b4c_conf[port_desc] = description
             elif line == 'exit':  # Reset when block ends
@@ -1883,16 +1885,16 @@ def port_b4c(data):
         for port_desc, description in port_b4c_conf.items():
             #print(port_desc, description)
             print('')
-            if '1/1/c' in description:
-                print('#port {} '.format(description))
-                print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
-                print('')
-            else:
+
+            if '1/1/c' not in port_desc or '1/1/c3' not in description:
                 print('#port {} '.format(description))
                 print('/configure port {} ethernet util-stats-interval 30'.format(port_desc))
                 print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
                 print('')
-        
+            if '1/1/c' in port_desc:
+                print('#port {} '.format(port_desc))
+                print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
+                print('')
     except IndexError:
         print("# No MGMT port was found, please check the config manually")
     return port_b4c_conf
