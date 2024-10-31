@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.4a
+# Version 5.4b
 
 import pandas as pd
 import os
@@ -103,15 +103,21 @@ def create_pd():
     name = name[6:-1].strip('"')
     
     # Search for rows containing 7705, 7750, or 7250
-    router_model = my_file_pd.index[my_file_pd['config'].str.contains("admin display")].tolist()
-    line = router_model + 1
+    # Find the index of the line containing "admin display"
+    router_model_idx = my_file_pd.index[my_file_pd['config'].str.contains("admin display")].tolist()
+    
     router_type = None
-    if '7250' in line:
-        router_type = '7250'
-    if '7705' in line:
-        router_type = '7705'
-    #print(router_type)
+    if router_model_idx:
+        next_line_idx = router_model_idx[0] + 1
+        if next_line_idx < len(my_file_pd):
+            line_content = my_file_pd.at[next_line_idx, 'config']
 
+            if '7250' in line_content:
+                router_type = '7250'
+            elif '7705' in line_content:
+                router_type = '7705'
+    
+    #print(router_type)
         #Check for ecmp on IXRE B4C
     try:
         ecmp = my_file_pd['config'].index[my_file_pd['config'].str.contains(r'ecmp \d{1}', regex=True)] # 1 nos in ecmp
