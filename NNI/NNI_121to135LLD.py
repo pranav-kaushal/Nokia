@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.2b
+# Version 5.3
 
 import pandas as pd
 import os
@@ -23,9 +23,9 @@ from itertools import islice
 
 
 # Check version from Github
-GITHUB_FILE_URL = 'https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/NNI/NNI_121to135LLD.py'
+GITHUB_FILE_URL = "https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/heads/main/NNI/NNI_121to135LLD.py"
 cwd = os.getcwd()
-LOCAL_FILE_PATH  = os.path.join(cwd, 'NNI_121to135LLD.py') # Path for the current script file
+LOCAL_FILE_PATH  = os.path.join(cwd, "NNI_121to135LLD.py") # Path for the current script file
 print(cwd)
 def get_remote_file_content(url):
     response = requests.get(url)
@@ -238,7 +238,7 @@ def metric_interface_nni(): # Interface output
     met_int_b4c, met_int_b40 = metric_nni(my_file_pd)
 
     print('')
-    if ecmp_value[1] != '2':
+    if ecmp_value[1] != '1':
         print('#--------------------------------------------------')
         print("# This router has ecmp value {}, please change it to ecmp 1".format(ecmp_value[1]))
         print('#--------------------------------------------------')
@@ -331,7 +331,7 @@ def print_bgp_ll_neighbors(neighbors, start_key, old_import_policy, new_group, n
 	print('/configure router bgp min-route-advertisement 1')
 	print('/configure router bgp multi-path maximum-paths 16')
 	print('/configure router bgp advertise-inactive')
-	print('/configure router bgp no bfd-enable')
+	#print('/configure router bgp no bfd-enable')
 	print('/configure router bgp rapid-withdrawal')
 	
 	print('##---------------------------------------------------------')        
@@ -409,7 +409,7 @@ def print_bgp_ll_neighbors_7705(neighbors, start_key, old_import_policy, new_gro
 	print('/configure router bgp min-route-advertisement 1')
 	#print('/configure router bgp multi-path maximum-paths 4')
 	print('/configure router bgp no advertise-inactive')
-	print('/configure router bgp no bfd-enable')
+	#print('/configure router bgp no bfd-enable')
 	print('/configure router bgp no rapid-withdrawal')
 	print('##---------------------------------------------------------')        
 	print('######-----       Delete Old BGP Group      -------######')
@@ -1606,6 +1606,7 @@ def del_policy_ixre():
     print('/configure system security profile "administrative" entry 90 action deny')
     print('/bof save')
     print('/admin save')
+    print('/admin display-config')
 
 
 # In[20]:
@@ -1623,6 +1624,9 @@ def pre_checks():
     print('')
     print('###-----     Precheck commands to run before start of work -----###')
     print('')
+    print('\environment no more ')
+    print('\environment time-stamp ')
+    print('\admin display-config ')
     print('\show version ')
     print('\show bof ')
     print('\show chassis ')
@@ -1633,7 +1637,6 @@ def pre_checks():
     print('\show port description ')
     print('\show router status ')
     print('\show router interface ')
-    print('\show router route-table summary ipv6 ')
     print('\show router route-table summary ipv6 ')
     print('\show router route-table ')
     print('\show router route-table ipv6 ')
@@ -1673,7 +1676,7 @@ def pre_checks():
 def post_checks():
     print ('')
     print ('#--------------------------------------------------')
-    print ('# Local router post checks "')
+    print ('# IXR/7705 router post checks "')
     print ('#--------------------------------------------------')
     print ('show service sap-using')
     print ('show port A/gnss')
@@ -1684,6 +1687,15 @@ def post_checks():
     print ('show router policy')
     print ('show router bgp summary')
     print ('')
+    print ('#--------------------------------------------------')
+    print ('# B40 router post checks "')
+    print ('#--------------------------------------------------')
+    print('show router bgp summary | match {}'.format(name))
+    print ('show router bgp summary | match B4C con all')
+    print ('show router bgp summ group "RR-5-ENSESR" | match B4C post-lines 2 ')
+    print ('show router bgp summ group "RR-5-ENSESR_CSR"  | match B4C post-lines 2 ')
+    print ('show router bgp group "RR-5-ENSESR" | match B4C pre-lines 1 ')
+    print ('show router bgp group "RR-5-ENSESR_CSR"  | match B4C pre-lines 1 ')
 
 
 # In[21]:
@@ -1815,7 +1827,7 @@ def main():
                 policy_RR_5_L3VPN_CSR_SPOKE()
                 L3VPN_CSR_SPOKE_7705()
 #------------------------------------    SPOKE TO HUB     #----------------------------------------------------------------#
-            if bool(csr_ixre_grp) and not bool(csr_7705_al):
+            if bool(csr_ixre_grp) and not bool(csr_ixre_al_ll):
                 policy_RR_5_ENSESR_SPOKE_CSR()
                 RR_5_ENSESR_CSR() # On Spoke to evpn hub facing policy
 
