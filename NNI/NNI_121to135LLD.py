@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.4
+# Version 5.4a
 
 import pandas as pd
 import os
@@ -103,12 +103,15 @@ def create_pd():
     name = name[6:-1].strip('"')
     
     # Search for rows containing 7705, 7750, or 7250
-    search_terms = ['7705', '7250', '7750']
-    for line in my_file_pd['config']:
-        match = re.search(r'(7705|7250)', line)
-        if match:
-            router_type = match.group()
-            #print(router_type)
+    router_model = my_file_pd.index[my_file_pd['config'].str.contains("admin display")].tolist()
+    line = router_model + 1
+    router_type = None
+    if '7250' in line:
+        router_type = '7250'
+    if '7705' in line:
+        router_type = '7705'
+    #print(router_type)
+
         #Check for ecmp on IXRE B4C
     try:
         ecmp = my_file_pd['config'].index[my_file_pd['config'].str.contains(r'ecmp \d{1}', regex=True)] # 1 nos in ecmp
@@ -663,16 +666,16 @@ def new_7705_bgp_group(neighbors, new_group, new_description,cluster_value, star
     print('    {}'.format(new_group))
     print('                description "{}"'.format(new_description))
     print('                family vpn-ipv4 vpn-ipv6 label-ipv4')
-    print('                type internal')
+    #print('                type internal')
 
     # Only print the cluster value if it exists (not None)
     if cluster_value is not None:
         print('                cluster {}'.format(cluster_value))
     print ('                import "{}"'.format(new_import_policy))
     print ('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
-    #print ('                local-as {}'.format(local_as))
-    #print ('                peer-as {}'.format(local_as))
-    #print('                advertise-inactive')
+    print ('                local-as {}'.format(local_as))
+    print ('                peer-as {}'.format(local_as))
+    print('                advertise-inactive')
     print ('                bfd-enable')
     print ('                aigp')
 
@@ -1626,7 +1629,7 @@ def pre_checks():
     print('')
     print('\environment no more ')
     print('\environment time-stamp ')
-    print('\admin display-config ')
+    print('admin display-config ')
     print('\show version ')
     print('\show bof ')
     print('\show chassis ')
