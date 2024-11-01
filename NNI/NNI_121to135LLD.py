@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.4b
+# Version 5.4d
 
 import pandas as pd
 import os
@@ -328,8 +328,6 @@ def extract_LL_bgp_neighbors(data, start_key, end_key, find_value):
 
 
 ####### Create the new HUB policy with LL and NON LL b40 ips    ###################
-
-
 def print_bgp_ll_neighbors(neighbors, start_key, old_import_policy, new_group, new_description, new_import_policy):
 	global neighbor_ip
 	print('#---------------------------------------------------------')
@@ -416,9 +414,7 @@ def print_bgp_ll_neighbors_7705(neighbors, start_key, old_import_policy, new_gro
 	print('#######-----      New BGP Configuration     -------######')
 	print('#---------------------------------------------------------')
 	print('/configure router bgp min-route-advertisement 1')
-	#print('/configure router bgp multi-path maximum-paths 4')
 	print('/configure router bgp no advertise-inactive')
-	#print('/configure router bgp no bfd-enable')
 	print('/configure router bgp no rapid-withdrawal')
 	print('##---------------------------------------------------------')        
 	print('######-----       Delete Old BGP Group      -------######')
@@ -441,48 +437,48 @@ def print_bgp_ll_neighbors_7705(neighbors, start_key, old_import_policy, new_gro
 	print('######-----        Add New BGP Group        -------######')
 	print('##---------------------------------------------------------')
 
-	if '-01' in name:
-		for neighbor_ip, ll_7705_details in neighbors.items():
-			if 'B40-01' in ll_7705_details:
-				print('/configure router bgp')
-				print('            group "{}_LL"'.format(new_group.split('"')[1]))
-				print('                description "{}"'.format(new_description.replace("RR-5-L3VPN_EBH", "RR-5-L3VPN_EBH_LL")))
-				print('                family vpn-ipv4 vpn-ipv6 label-ipv4')
-				#print('                type internal')
-				print('                import "{}_LL"'.format(new_import_policy))
-				print('                export "{}_LL"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
-				print('                local-as {}'.format(local_as))
-				print('                peer-as {}'.format(local_as))
-				print('                advertise-inactive')
-				print('                bfd-enable')
-				print('                aigp')
-				print('                neighbor {}'.format(neighbor_ip))
-				print('                    description "{}"'.format(ll_7705_details))
-				print('                    authentication-key "eNSEbgp"')
-				print('                exit')
-				print('            exit')
-			if 'B40-02' in ll_7705_details:
-				#print('/configure router bgp')
-				print('            {}'.format(new_group))
-				print('                description "{}"'.format(new_description))
-				print('                family vpn-ipv4 vpn-ipv6 label-ipv4')
-				#print('                type internal')
-				print('                import "{}"'.format(new_import_policy))
-				print('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
-				print('                local-as {}'.format(local_as))
-				print('                peer-as {}'.format(local_as))
-				print('                advertise-inactive')
-				print('                bfd-enable')
-				print('                aigp')
-				print('                neighbor {}'.format(neighbor_ip))
-				print('                    description "{}"'.format(ll_7705_details))
-				print('                    authentication-key "eNSEbgp"')
-				print('                exit')
-				print('            exit')
-				print('            no shutdown')
-				print('        exit')
-				print('    exit')
-				print('exit all')
+	#if '-01' in name:
+	for neighbor_ip, ll_7705_details in neighbors.items():
+		if 'B40-01' in ll_7705_details:
+			print('/configure router bgp')
+			print('            group "{}_LL"'.format(new_group.split('"')[1]))
+			print('                description "{}"'.format(new_description.replace("RR-5-L3VPN_EBH", "RR-5-L3VPN_EBH_LL")))
+			print('                family vpn-ipv4 vpn-ipv6 label-ipv4')
+			#print('                type internal')
+			print('                import "{}_LL"'.format(new_import_policy))
+			print('                export "{}_LL"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
+			print('                local-as {}'.format(local_as))
+			print('                peer-as {}'.format(local_as))
+			print('                advertise-inactive')
+			print('                bfd-enable')
+			print('                aigp')
+			print('                neighbor {}'.format(neighbor_ip))
+			print('                    description "{}"'.format(ll_7705_details))
+			print('                    authentication-key "eNSEbgp"')
+			print('                exit')
+			print('            exit')
+		if 'B40-02' in ll_7705_details:
+			#print('/configure router bgp')
+			print('            {}'.format(new_group))
+			print('                description "{}"'.format(new_description))
+			print('                family vpn-ipv4 vpn-ipv6 label-ipv4')
+			#print('                type internal')
+			print('                import "{}"'.format(new_import_policy))
+			print('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
+			print('                local-as {}'.format(local_as))
+			print('                peer-as {}'.format(local_as))
+			print('                advertise-inactive')
+			print('                bfd-enable')
+			print('                aigp')
+			print('                neighbor {}'.format(neighbor_ip))
+			print('                    description "{}"'.format(ll_7705_details))
+			print('                    authentication-key "eNSEbgp"')
+			print('                exit')
+			print('            exit')
+			print('            no shutdown')
+			print('        exit')
+			print('    exit')
+			print('exit all')
 
 
 # In[11]:
@@ -553,6 +549,57 @@ def extract_vprn_info(data):
 
 
 # In[12]:
+
+
+def all_bgp_neighbors(data):
+    all_bgp_neigh = {}
+    current_group = None
+    current_neighbor_ip = None
+
+    for _, row in data.iterrows():
+        line = row['config'].strip()
+
+        # Detect group lines
+        if line.startswith('group'):
+            current_group = line.split('"')[1]  # Capture group name
+            all_bgp_neigh[current_group] = {}  # Initialize this group
+
+        # Detect neighbor and description lines within a group
+        elif line.startswith('neighbor') and current_group:
+            current_neighbor_ip = line.split()[1]
+            all_bgp_neigh[current_group][current_neighbor_ip] = ""  # Placeholder for description
+
+        elif line.startswith('description') and current_group and current_neighbor_ip:
+            description = line.split(' ', 1)[1].strip('"')
+            if 'B40' in description or 'B4C' in description:  # Check if 'B40' or 'B4C' is in description
+                all_bgp_neigh[current_group][current_neighbor_ip] = description
+
+        # Reset neighbor IP when exiting the block
+        elif line == 'exit':
+            current_neighbor_ip = None
+
+    return all_bgp_neigh
+
+
+def print_all_bgp_neighbors():
+    global has_b40_bgp
+    has_b40_bgp = None
+    all_bgp_neigh = all_bgp_neighbors(my_file_pd)
+    for group, neighbors in all_bgp_neigh.items():
+        #print(f'Group: "{group}"')
+        for neighbor_ip, description in neighbors.items():
+            if 'B40' in description:
+                has_b40_bgp = True
+                
+            #print(f'    Neighbor IP: {neighbor_ip}')
+            #print(f'    Description: {description}')
+        #print('-' * 40)
+    return has_b40_bgp
+# Example usage
+
+
+
+# In[13]:
 
 
 def extract_bgp_neighbors(data, start_key, end_key, find_value):
@@ -721,7 +768,7 @@ def new_7705_bgp_group(neighbors, new_group, new_description, start_key, old_imp
     print('#--------------------------------------------------')
 
 
-# In[13]:
+# In[14]:
 
 
 ######################## Groups for IXRE HUb - IXRE Spoke ###########################
@@ -804,7 +851,7 @@ def RR_5_L3VPN_CSR(): # IXRE spoke Facing IXRE HUB
 
 
 
-# In[14]:
+# In[15]:
 
 
 def bgp_rem_config():
@@ -819,7 +866,7 @@ def bgp_rem_config():
     print('##---------------------------------------------------------')
 
 
-# In[15]:
+# In[16]:
 
 
 def L3VPN_CSR_SPOKE_7705(): # IXRE hub Facing 7705 Spoke
@@ -836,7 +883,7 @@ def L3VPN_CSR_SPOKE_7705(): # IXRE hub Facing 7705 Spoke
 	new_7705_bgp_group(neighbors, new_group, new_description, start_key, old_import_policy, new_import_policy)
 
 
-# In[16]:
+# In[17]:
 
 
 # Standalone IXRE policy config
@@ -1214,7 +1261,7 @@ def csr_osw_l3vpn_policy(my_file_pd):
     
 
 
-# In[17]:
+# In[18]:
 
 
 #######################    7705 policies    ###############################
@@ -1519,7 +1566,7 @@ def policy_RR_5_L3VPN_SPOKE_CSR():
 ####################################################################
 
 
-# In[18]:
+# In[19]:
 
 
 # B40 group change and check interface to 1000000
@@ -1612,7 +1659,7 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
-# In[19]:
+# In[20]:
 
 
 def del_policy_ixre():
@@ -1643,7 +1690,7 @@ def del_policy_ixre():
     print('/admin display-config')
 
 
-# In[20]:
+# In[21]:
 
 
 def pre_checks():
@@ -1732,7 +1779,7 @@ def post_checks():
     print ('show router bgp group "RR-5-ENSESR_CSR"  | match B4C pre-lines 1 ')
 
 
-# In[21]:
+# In[22]:
 
 
 # B40 group change and check interface to 1000000
@@ -1777,12 +1824,10 @@ def b40_02_changes_ixre(system_ip, name):
     print ('/show router isis 5 interface | match "<site interface>"')
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
-
-
 ############################################################################################################################
 
 
-# In[22]:
+# In[23]:
 
 
 def b40_bgp_conf(folder):
@@ -1800,7 +1845,7 @@ def b40_bgp_conf(folder):
             b40_02_rollback_ixre(system_ip, name)
 
 
-# In[23]:
+# In[24]:
 
 
 import os
@@ -1821,6 +1866,8 @@ def main():
         try:
             os.chdir(cwd)
             create_pd()
+            print_all_bgp_neighbors()
+
             # print(name)
             # IXRE policies for HUB, spoke
             csr_ixre_grp = my_file_pd.index[my_file_pd['config'].str.contains('group "RR-5-ENSESR-CLIENT"')].tolist()  # to B40 or AL or HUB
@@ -1831,7 +1878,7 @@ def main():
             
             # IXRE policies for HUB, spoke IXRE facing 7705 with L3VPN
             csr_ixre_7705_grp = my_file_pd.index[my_file_pd['config'].str.contains('group "RR-5-L3VPN-CLIENT"')].tolist()  # to B40 or AL or HUB with 7705 as spoke
-            csr_7705_al = my_file_pd['config'].index[my_file_pd['config'].str.contains('B40')].tolist()
+            #csr_7705_al = my_file_pd['config'].index[my_file_pd['config'].str.contains('B40')].tolist()
 
             csr_ixre_7705_spoke = my_file_pd.index[my_file_pd['config'].str.contains('group "RR-5-L3VPN"')].tolist()  # to the spoke from HUB with 7705
             
@@ -1866,13 +1913,12 @@ def main():
                 policy_RR_5_ENSESR_SPOKE_CSR()
                 RR_5_ENSESR_CSR() # On Spoke to evpn hub facing policy
 
-            if bool(csr_ixre_7705_grp) and bool(csr_7705_al):
-                print(bool(csr_ixre_7705_grp), bool(csr_7705_al))
+            if bool(csr_ixre_7705_grp) and bool(has_b40_bgp):
                 policy_RR_5_L3VPN_CSR_EBH()
                 policy_RR_5_L3VPN_CSR_EBH_LL()
                 RR_5_L3VPN_EBH_LL() # This is a L3VPN HUB policy for LL and non LL neighbors for any 7705 downstream
 
-            if bool(csr_ixre_7705_grp) and not bool(csr_7705_al):
+            if bool(csr_ixre_7705_grp) and not bool(has_b40_bgp):
                 policy_RR_5_L3VPN_SPOKE_CSR()
                 RR_5_L3VPN_CSR() # On Spoke to l3vpn hub facing policy
 
@@ -1899,7 +1945,7 @@ def main():
 
 
 
-# In[24]:
+# In[25]:
 
 
 if __name__ == "__main__":
