@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 1.11
+# Version 1.12
 
 import pandas as pd
 import os
@@ -1778,6 +1778,7 @@ def metric_int_hub(data):
         
         in_neighbor_block = False #Use a flag in_neighbor_block to track if we are within a neighbor block.
         interface_desc = None
+        description = None
     
         for i in range(group_start_idx, group_end_idx):
             line = data.at[i, 'config'].strip()
@@ -2177,6 +2178,7 @@ def main():
             # IXRE config changes based on policies
             sys.stdout = open(folder + '/' + name + '_LLD135.cfg', 'w')
             find_unnumbered_int(my_file_pd)
+            metric_int_hub(my_file_pd)
             site_int()
             new_qos()
             port_b4c(my_file_pd)
@@ -2185,8 +2187,7 @@ def main():
 
     #----------------------------------------------------------------------
             if bool(has_B40):        #and len(is_B40)>=1
-                b40_name_get()
-                if '01' in b40_name:
+                if '01' in b40_name_get():
                     print("# This is a West Node")
                     policy_RR_5_ENSESR_IRRW_EBH() # for ring b40 node (tested)
                     rr_5_ensesr_ebh_west() # (tested)
@@ -2201,7 +2202,7 @@ def main():
                         if len(csr_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRW_CSR() # policy for the CSR non spoke ixre
                             RR_5_ENSESR_IRRW_CSR() # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
-                if '02' in b40_name:
+                if '02' in b40_name_get():
                     print("# This is a East Node")
                     policy_RR_5_ENSESR_IRRE_EBH() # for ring b40 node (tested)
                     rr_5_ensesr_ebh_east() # (tested)
@@ -2262,12 +2263,6 @@ if __name__ == "__main__":
         restart_script()
     else:
         main()
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:
