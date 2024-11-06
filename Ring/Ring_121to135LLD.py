@@ -737,6 +737,16 @@ def rr_5_ensesr_ebh_east():
 
 
 def policy_bgp():
+    try:
+        cmty = None
+        local_cmty = my_file_pd.index[my_file_pd['config'].str.contains('community "CMTY')].tolist()
+        if local_cmty:
+            cmty = my_file_pd['config'][local_cmty[0]]
+        else:
+            print('')
+    except Exception as e:
+        print('# No Cluster found')
+    
     print ('#--------------------------------------------------')
     print ('# New Policy Configuration')
     print ('#--------------------------------------------------')
@@ -752,7 +762,19 @@ def policy_bgp():
     print ('            exit')
     print ('            commit')
     print ('        exit all')
-
+    print('#--------------------------------------------------')
+    print('## Cleaning LLD 1.2.1 prefix lists and communities ... ')
+    print('#--------------------------------------------------')
+    print('')
+    print('/configure route policy-options')
+    print('  begin')
+    print('    no prefix-list "Default-Routes"')
+    print('    no prefix-list "PRFX_LOCAL_SYSTEM_ADDRESS"')
+    print('    {} no members'.format(cmty))
+    print('    no {}'.format(cmty))
+    print('            exit')
+    print('            commit')
+    print('        exit all')
 
 def bgp_remove():
     print('#---------------------------------------------------------#')        
@@ -760,12 +782,15 @@ def bgp_remove():
     print('#---------------------------------------------------------#')
     print('/configure router bgp no family')
     print('/configure router bgp no bfd-enable')
+    print('/configure router bgp multi-path maximum-paths 16')
     #print('/configure router bgp selective-label-ipv4-install')
     print('/configure router bgp rapid-update vpn-ipv4 vpn-ipv6 evpn label-ipv4')
     print('/configure router bgp error-handling update-fault-tolerance')
     print('/config router bgp no initial-send-delay-zero')
     print('/exit all')
     print('#---------------------------------------------------------#')
+
+    
 
 
 # In[14]:
@@ -953,7 +978,7 @@ def policy_RR_5_ENSESR_IRRW_EBH():
     print ('                exit')
     print ('            policy-statement "IMPORT_RR-5-ENSESR_IRRW-EBH"')
     print ('                description "IMPORT ROUTES FROM EBH AL"')
-    print ('                default-action accept')
+    print ('                default-action drop')
     print ('                exit')
     print ('            exit')
     print ('            commit')
@@ -1817,7 +1842,7 @@ def site_int(): # Interface output
     print('/show system rollback')
     print('/admin rollback save comment "Pre-update Checkpoint"')
     print('')
-    if ecmp_value[1] != '2':
+    if ecmp_value[1] != '1':
         print('#--------------------------------------------------')
         print("# This router has ecmp value of 2, please change it to ecmp 1")
         print('#--------------------------------------------------')
@@ -1829,6 +1854,7 @@ def site_int(): # Interface output
     print('#--------------------------------------------------------#')
     print('')
     print('/configure router isis 5 overload-on-boot timeout 180')
+    print('/configure router interface "system" bfd 100 receive 100 multiplier 3')
     if '7250' in router_type:
         print('/configure port 1/1/24 ethernet speed 1000')
     print('')
@@ -1844,14 +1870,14 @@ def site_int(): # Interface output
         for interface_desc, description in metric_interface_b40.items():
         #print(interface_desc, description, found_interface)
             if found_interface[0] not in interface_desc:
-                print('/configure router isis 5 interface {} level 1 metric 1000000'.format(interface_desc))
-            if found_interface[0] in interface_desc:
-                print('/configure router isis 5 interface {} level 1 metric 800'.format(interface_desc))
+                print('/configure router isis 5 interface {} level 1 metric 1000000'.format(interface_desc)) # Metric change only for the B40
+            #if found_interface[0] in interface_desc:
+             #   print('/configure router isis 5 interface {} level 1 metric 800'.format(interface_desc))
 
     if found_interface:
         for ints in found_interface:
             print('')
-            print('/configure router interface {} no bfd 50 receive 50 multiplier 5'.format(ints))
+            print('/configure router interface {} no bfd'.format(ints))
 
 
 # In[17]:
@@ -2161,8 +2187,8 @@ def main():
             # Find what kind of a node is it B40, Ring, Spoke
             grp_peer = my_file_pd.index[my_file_pd['config'].str.contains('group "RR-5-PEER"')].tolist()
             grp_r5_enesr_client = my_file_pd.index[my_file_pd['config'].str.contains('group "RR-5-ENSESR-CLIENT"')].tolist()  # to B40 or AL or HUB
-            grp_peer_e = my_file_pd.index[(my_file_pd['config'].str.contains('group "RR-5-PEER"')) & (my_file_pd['config'].shift(-1).str.contains('IRR-W to IRR-E'))].tolist()
-            grp_peer_w = my_file_pd.index[(my_file_pd['config'].str.contains('group "RR-5-PEER"')) & (my_file_pd['config'].shift(-1).str.contains('IRR-E to IRR-W'))].tolist()
+            grp_peer_w = my_file_pd.index[(my_file_pd['config'].str.contains('group "RR-5-PEER"')) & (my_file_pd['config'].shift(-1).str.contains('IRR-W to IRR-E'))].tolist()
+            grp_peer_e = my_file_pd.index[(my_file_pd['config'].str.contains('group "RR-5-PEER"')) & (my_file_pd['config'].shift(-1).str.contains('IRR-E to IRR-W'))].tolist()
             grp_rr_5_ENSESR = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR"')].tolist() #--- These are spokes and CSR 
 
             has_B40 = my_file_pd.index[(my_file_pd['config'].str.contains('import "IMPORT_RR-5-ENSESR-CLIENT') & my_file_pd['config'].shift(-6).str.contains('description.*B40'))].tolist()
@@ -2196,10 +2222,10 @@ def main():
                         #print(spoke_bgp_neighbors, csr_bgp_neighbors)
                         if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
                             delete_spoke_csr_bgp_neighbors()
-                        if len(spoke_bgp_neighbors)>=1:
+                        #if len(spoke_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRW_SPOKE() # for west spokes
                             RR_5_ENSESR_IRRW_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke west neighbors
-                        if len(csr_bgp_neighbors)>=1:
+                        #if len(csr_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRW_CSR() # policy for the CSR non spoke ixre
                             RR_5_ENSESR_IRRW_CSR() # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
                 if '02' in b40_name_get():
@@ -2211,10 +2237,10 @@ def main():
                         #print(spoke_bgp_neighbors, csr_bgp_neighbors)
                         if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
                             delete_spoke_csr_bgp_neighbors()
-                        if len(spoke_bgp_neighbors)>=1:
+                        #if len(spoke_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRE_SPOKE() # for east spokes
                             RR_5_ENSESR_IRRE_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke east neighbors
-                        if len(csr_bgp_neighbors)>=1:
+                        #if len(csr_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRE_CSR() # policy for the CSR non spoke ixre
                             RR_5_ENSESR_IRRE_CSR() # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
         #----------------------------------------------------------------------------------------------------------------#
