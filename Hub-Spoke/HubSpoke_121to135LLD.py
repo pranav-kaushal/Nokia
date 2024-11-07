@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 3.21
+# Version 3.23
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
 
@@ -29,12 +29,16 @@ GITHUB_FILE_URL = "https://raw.githubusercontent.com/pranav-kaushal/Nokia/refs/h
 cwd = os.getcwd()
 LOCAL_FILE_PATH  = os.path.join(cwd, "HubSpoke_121to135LLD.py") # Path for the current script file
 print(cwd)
-def get_remote_file_content(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.content
-    else:
-        print(f"Failed to retrieve file. Status code: {response.status_code}")
+def get_remote_file_content(url, timeout=3):
+    try:
+        response = requests.get(url, timeout=timeout)
+        if response.status_code == 200:
+            return response.content
+        else:
+            print(f"Failed to retrieve file. Status code: {response.status_code}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
         return None
 
 def get_file_hash(content):
