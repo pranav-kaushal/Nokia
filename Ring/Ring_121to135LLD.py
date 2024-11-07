@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 1.12
+# Version 1.14
 
 import pandas as pd
 import os
@@ -750,7 +750,7 @@ def policy_bgp():
     print ('#--------------------------------------------------')
     print ('# New Policy Configuration')
     print ('#--------------------------------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            prefix-list "PRFX_DEFAULT"')
@@ -772,7 +772,6 @@ def policy_bgp():
     print('    no prefix-list "PRFX_LOCAL_SYSTEM_ADDRESS"')
     print('    {} no members'.format(cmty))
     print('    no {}'.format(cmty))
-    print('            exit')
     print('            commit')
     print('        exit all')
 
@@ -786,8 +785,8 @@ def bgp_remove():
     #print('/configure router bgp selective-label-ipv4-install')
     print('/configure router bgp rapid-update vpn-ipv4 vpn-ipv6 evpn label-ipv4')
     print('/configure router bgp error-handling update-fault-tolerance')
-    print('/config router bgp no initial-send-delay-zero')
-    print('/exit all')
+    #print('/config router bgp no initial-send-delay-zero')
+    print('exit all')
     print('#---------------------------------------------------------#')
 
     
@@ -826,7 +825,7 @@ def create_bof(old_statics):
 
 def policy_RR_5_ENSESR_IRRW_CSR():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-CSR"')
@@ -917,7 +916,7 @@ def policy_RR_5_ENSESR_IRRW_CSR():
 #############################################################
 def policy_RR_5_ENSESR_IRRW_EBH():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-EBH"')
@@ -986,7 +985,7 @@ def policy_RR_5_ENSESR_IRRW_EBH():
 ####################################################################
 def policy_RR_5_ENSESR_IRRW_IRR():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-IRR"')
@@ -1058,7 +1057,7 @@ def policy_RR_5_ENSESR_IRRW_IRR():
 ####################################################################
 def policy_RR_5_ENSESR_IRRW_SPOKE():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRW-SPOKE"')
@@ -1152,7 +1151,7 @@ def policy_RR_5_ENSESR_IRRW_SPOKE():
 
 def policy_RR_5_ENSESR_IRRE_CSR():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRE-CSR"')
@@ -1245,7 +1244,7 @@ def policy_RR_5_ENSESR_IRRE_CSR():
 ########################################################################
 def policy_RR_5_ENSESR_IRRE_EBH():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRE-EBH"')
@@ -1388,7 +1387,7 @@ def policy_RR_5_ENSESR_IRRE_IRR():
 #########################################################################
 def policy_RR_5_ENSESR_IRRE_SPOKE():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_IRRE-SPOKE"')
@@ -1483,7 +1482,7 @@ def policy_RR_5_ENSESR_IRRE_SPOKE():
 ######################################################################################
 def policy_RR_5_ENSESR_IRR():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_CSR-IRR"')
@@ -1555,7 +1554,7 @@ def policy_RR_5_ENSESR_IRR():
 
 def policy_RR_5_ENSESR_CSR_SPOKE():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_CSR-SPOKE"')
@@ -1647,7 +1646,7 @@ def policy_RR_5_ENSESR_CSR_SPOKE():
 ###########################################################################################
 def policy_RR_5_ENSESR_SPOKE_CSR():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_SPOKE-CSR"')
@@ -1718,7 +1717,7 @@ def policy_RR_5_ENSESR_SPOKE_CSR():
 ###########################################################################################
 def policy_RR_5_ENSESR_CSR_IRR():
     print ('#---------------New Policy Add------------------------')
-    print('/configure router bgp')
+    print('/configure router')
     print ('        policy-options')
     print ('            begin')
     print ('            policy-statement "EXPORT_RR-5-ENSESR_CSR-IRR"')
@@ -1839,6 +1838,17 @@ def site_int(): # Interface output
     print('########################################################################################')
     print('')
     print('#### PLEASE LOGIN TO THE ROUTER USING point to point ip address, so as not to loose the connectivity when BGP is down. #####')
+    print('env no more')
+    print('sh system info')
+    print('show sys alarm')
+    print('show service sap-using')
+    print('show port A/gnss')
+    print('show system ptp port')
+    print('show router 1 interface')
+    print('show router 4 interface')
+    print('show router policy')
+    print('show router bgp summary')
+    print('show router isis 5 adjancency')
     print('/show system rollback')
     print('/admin rollback save comment "Pre-update Checkpoint"')
     print('')
@@ -1849,6 +1859,7 @@ def site_int(): # Interface output
         print('/configure router ecmp 1')
     print('/configure system resource ecmp-profile 1 ip links 4 groups 1024')
     print('/configure system resource ecmp-profile 2 mpls links 4 groups 1023')
+    print('/configure system snmp streaming no shutdown')
     print('#--------------------------------------------------------#')        
     print('######-----  Change ISIS interface metric   -------######')
     print('#--------------------------------------------------------#')
@@ -1878,6 +1889,7 @@ def site_int(): # Interface output
         for ints in found_interface:
             print('')
             print('/configure router interface {} no bfd'.format(ints))
+            print('/configure router isis 5 interface {} no bfd-enabled'.format(ints))
 
 
 # In[17]:
@@ -1926,6 +1938,13 @@ def port_b4c(data):
                 print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
                 print('')
         
+        if bool(has_B40) or bool(grp_rr_5_ENSESR):
+            print('/configure port 1/1/c33/1 ethernet util-stats-interval 30')
+            print('/configure port 1/1/c33/1 ethernet egress-port-qos-policy "40012"'.format(port_desc))
+            print('')
+            print('/configure port 1/1/c34/1 ethernet util-stats-interval 30')
+            print('/configure port 1/1/c34/1 ethernet egress-port-qos-policy "40012"'.format(port_desc))
+            print('')
         if bool(has_B40) or bool(grp_rr_5_ENSESR):
             print('/configure port 1/1/c33/1 ethernet util-stats-interval 30')
             print('/configure port 1/1/c33/1 ethernet egress-port-qos-policy "40012"'.format(port_desc))
@@ -2027,6 +2046,24 @@ def new_qos():
     print('                exit')
     print('            exit')
     print('        exit all')
+    print('')
+    print('#--------------------------------------------------------#')        
+    print('######-----      Change QOS policy 4011       -------######')
+    print('#--------------------------------------------------------#')
+    print('/configure qos')
+    print ('        vlan-qos-policy "40011" create')
+    print ('            description "eNSE SR Network VLAN QOS Policy"')
+    print ('            stat-mode enqueued-with-discards')
+    print ('            queue "1" create')
+    print ('                queue-mgmt "RAN_Downstream_Queue_Mgmt_Policy"')
+    print ('                percent-rate 100.00 cir 24.00')
+    print ('            exit')
+    print ('            queue "2" create')
+    print ('                queue-mgmt "RAN_Downstream_Queue_Mgmt_Policy"')
+    print ('                percent-rate 100.00 cir 3.00')
+    print ('            exit')
+    print('        exit all')
+    print('')
 
 
 # In[20]:
@@ -2138,6 +2175,11 @@ def pre_post_b40():
     print ('show router 4 interface')
     print ('show router policy')
     print ('show router bgp summary')
+    print ('sh system info')
+    print ('show system alarm')
+    print ('show router policy')
+    print ('show router bgp summary')
+    print ('show router isis 5 adjancency')
     print ('')
     print ('#--------------------------------------------------')
     print ('# B40 post checks for pinging CSR interfaces from B40-01 and 02"')
@@ -2170,6 +2212,51 @@ def post_checks():
 
 
 # In[23]:
+
+
+def all_bgp_neighbors(data):
+    all_bgp_neigh = {}
+    current_group = None
+    current_neighbor_ip = None
+
+    for _, row in data.iterrows():
+        line = row['config'].strip()
+
+        # Detect group lines
+        if line.startswith('group'):
+            current_group = line.split('"')[1]  # Capture group name
+            all_bgp_neigh[current_group] = {}  # Initialize this group
+
+        # Detect neighbor and description lines within a group
+        elif line.startswith('neighbor') and current_group:
+            current_neighbor_ip = line.split()[1]
+            all_bgp_neigh[current_group][current_neighbor_ip] = ""  # Placeholder for description
+            #print(all_bgp_neigh)
+
+        elif line.startswith('description') and current_group and current_neighbor_ip:
+            description = line.split(' ', 1)[1].strip('"')
+            if 'B40' in description or 'B4C' in description:  # Check if 'B40' or 'B4C' is in description
+                all_bgp_neigh[current_group][current_neighbor_ip] = description
+
+        # Reset neighbor IP when exiting the block
+        elif line == 'exit':
+            current_neighbor_ip = None
+
+    return all_bgp_neigh
+
+
+def print_all_bgp_neighbors():
+    all_bgp_neigh = all_bgp_neighbors(my_file_pd)
+    for group, neighbors in all_bgp_neigh.items():
+        #print(f'Group: "{group}"', len(neighbors))
+        if 'RR' in group:
+            grp_bgp = group
+            grp_count =  len(neighbors)
+            #print(group, grp_count)
+    return grp_bgp, grp_count
+
+
+# In[24]:
 
 
 def main():
@@ -2210,6 +2297,7 @@ def main():
             port_b4c(my_file_pd)
             bgp_remove()
             policy_bgp()
+            #grp_bgp, grp_count = print_all_bgp_neighbors()
 
     #----------------------------------------------------------------------
             if bool(has_B40):        #and len(is_B40)>=1
@@ -2255,8 +2343,9 @@ def main():
             if bool(grp_rr_5_ENSESR) and not bool(has_B40)and not bool(grp_peer): # If it has no B40 and is a Ring node
                 policy_RR_5_ENSESR_CSR_IRR() # for CSR that is not a spoke
                 rr_5_ensesr_IRR() #group "RR-5-ENSESR-CLIENT" to east or west ring node NOT B40
+                policy_RR_5_ENSESR_CSR_SPOKE() # for ring spokes, this policy will be added in any case
             if bool(grp_r5_enesr_client) and not bool(has_B40) and not bool(grp_peer) and bool(grp_rr_5_ENSESR):
-                policy_RR_5_ENSESR_CSR_SPOKE() # for ring spokes
+                #policy_RR_5_ENSESR_CSR_SPOKE() # for ring spokes
                 rr_5_csr_ring_spoke() #group "RR-5-ENSESR_SPOKE" for spoke on ring nodes (policy "IMPORT_RR-5-ENSESR_CSR-SPOKE")
 
 #-----------------------------------    Spoke    ------------------------------------------------#
@@ -2281,7 +2370,7 @@ def main():
             continue  # skip to  next item in the for loop
 
 
-# In[24]:
+# In[25]:
 
 
 if __name__ == "__main__":
