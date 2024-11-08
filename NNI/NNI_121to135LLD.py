@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.4f
+# Version 5.4g
 
 import pandas as pd
 import os
@@ -188,6 +188,9 @@ def create_bof(old_statics):
     get_bof(my_file_pd)
     bof_data()
     print('')
+    print('###################################################################')
+    print('###########            BOF CONFIG                      ############')
+    print('###################################################################')
     print('#--------------------------------------------------')
     print('#System Name: {}"'.format(name))
     print('#--------------------------------------------------')
@@ -198,16 +201,17 @@ def create_bof(old_statics):
     print(static_route_new_3)
     print('/bof speed 1000')
     print('')
-    print('')
+    print('/show bof')
     print('#--------------------------------------------------')
     print('########### Removing Old Static Routes ############')
     print('#--------------------------------------------------')
-    print('/show bof')
     print('')
     for rts in old_statics:
         routes = my_file_pd['config'][rts]
         routes = re.sub(r' {4,}', ' ', routes)
         print("/bof no", routes)
+    print('')
+    print('/show bof')
 
 
 # In[7]:
@@ -252,6 +256,9 @@ def metric_interface_nni(): # Interface output
     met_int_b4c, met_int_b40 = metric_nni(my_file_pd)
 
     print('')
+    print('###################################################################')
+    print('###########        LLD 135 ROUTER CONFIG               ############')
+    print('###################################################################')
     if ecmp_value[1] != '1':
         print('#--------------------------------------------------')
         print("# This router has ecmp value {}, please change it to ecmp 1".format(ecmp_value[1]))
@@ -526,6 +533,9 @@ def extract_vprn_info(data):
             vprn_value[current_vprn][current_interface]['address'] = address
             #print(f"Captured address: {address} for interface {current_interface} under VPRN {current_vprn}")
         # Reset block flag when the 'exit' statement is found
+        elif line == 'exit' and current_interface:
+            #print(f"Exiting VPRN block: {current_vprn}")
+            continue
         elif line == 'exit' and in_vprn_block:
             #print(f"Exiting VPRN block: {current_vprn}")
             current_interface = None
@@ -538,7 +548,7 @@ def extract_vprn_info(data):
     print ('')
     for key, value in vprn_value.items():
         for sub_key, sub_value in value.items():
-            if 'RAN' in sub_key:
+            if 'RAN' in sub_key and sub_value:
         # Access the 'address' directly from the dictionary
                 ip_add_1 = sub_value.get('address', '').split('/')[0]
                 print('ping router-instance "RAN" {}'.format(ip_add_1))
@@ -1699,9 +1709,9 @@ def del_policy_ixre():
 
 
 def pre_checks():
-    print('########### Following info is Just to verify the interface and all system info ############')
+    print('###########    Following info is to verify the interface and all system info       ############')
     print('# System Name: {}", "system ip: {}" , " Router Type: {}"'.format(name, system_ip, router_type))
-    print('##############################################################')
+    print('################################################################################################')
     print('')
     print('###-----      create system rollback     -------###')
     print('')
@@ -1761,10 +1771,54 @@ def pre_checks():
 # Post check ping check script / 
 def post_checks():
     print ('')
+    print('###################################################################')
+    print('###########            POST CHECKS                     ############')
+    print('###################################################################')
     print ('#--------------------------------------------------')
-    print ('# IXR/7705 router post checks "')
+    print ('#---------- IXR/7705 router post checks ----------"')
     print ('#--------------------------------------------------')
-    print ('show service sap-using')
+    print('\show bof ')
+    print('\show chassis ')
+    print('\show system memory-pools ')
+    print('\show card ')
+    print('\show mda ')
+    print('\show port ')
+    print('\show port description ')
+    print('\show router status ')
+    print('\show router interface ')
+    print('\show router route-table summary ipv6 ')
+    print('\show router route-table ')
+    print('\show router route-table ipv6 ')
+    print('\show router isis 5 adjacency ')
+    print('\show router isis 5 routes ')
+    print('\show router isis 5 interface ')
+    print('\show router bgp summary ')
+    print('\show router bgp neighbor ')
+    print('\show router bgp group ')
+    print('\show router bgp routes label-ipv4 ')
+    print('\show router bgp routes evpn  ip-prefix ')
+    print('\show router bgp routes evpn ip6-prefix')
+    print('\show service service-using ')
+    print('\show service id 1 base ')
+    print('\show service id 100 base ')
+    print('\show service id 4 base ')
+    print('\show service id 400 base ')
+    print('\show router 1 status ')
+    print('\show router tunnel-table | match 172.31. ')
+    print('\show router 1 interface ')
+    print('\show router 1 route-table ')
+    print('\show router 1 route-table ipv6')
+    print('\show service id  bgp-evpn ')
+    print('\show router 4 status ')
+    print('\show router 4 interface ')
+    print('\show router 4 route-table ')
+    print('\show router 4 route-table ipv6')
+    print('\show log log-id 100 ')
+    print('\show log log-id 99')
+    print('\show system information')
+    print('\show service sap-using')
+    print('\show time')
+    print('\show system sync-if-timing')
     print ('show port A/gnss')
     print ('show system ptp port')
     print ('show router 1 interface')
@@ -1774,7 +1828,7 @@ def post_checks():
     print ('show router bgp summary')
     print ('')
     print ('#--------------------------------------------------')
-    print ('# B40 router post checks "')
+    print ('#----------  B40 router post checks ---------- "')
     print ('#--------------------------------------------------')
     print('show router bgp summary | match {}'.format(name))
     print ('show router bgp summary | match B4C con all')
@@ -1790,12 +1844,12 @@ def post_checks():
 # B40 group change and check interface to 1000000
 
 def b40_01_changes_ixre(system_ip, name):
-    print ('###Remove neighbor from 121 bgp group ONLY after adding the bgp on B40-01 and 02')
+    print ('### Remove neighbor from 121 bgp group ')
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR" no neighbor {}'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('###Add neighbor to 135 bgp group')
+    print ('### Add neighbor to 135 bgp group')
     print ('/configure router bgp group "RR-5-ENSESR_CSR" neighbor {}'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR_CSR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
     print ('/configure router bgp group "RR-5-ENSESR_CSR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
@@ -1811,12 +1865,12 @@ def b40_01_changes_ixre(system_ip, name):
 
 
 def b40_02_changes_ixre(system_ip, name):
-    print ('###Remove neighbor from 121 bgp group after you have brought up 135 BGP neigh on B40-01 and 02')
+    print ('### Remove neighbor from 121 bgp group')
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR" no neighbor {}'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('###Add neighbor to 135 bgp group')
+    print ('### Add neighbor to 135 bgp group')
     print ('/configure router bgp group "RR-5-ENSESR_CSR" neighbor {}'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR_CSR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
     print ('/configure router bgp group "RR-5-ENSESR_CSR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
@@ -1895,6 +1949,8 @@ def main():
             # IXRE config changes based on policies
             sys.stdout = open(folder + '/' + name + '_LLD135.cfg', 'w')
             pre_checks()
+            bof_data()
+            create_bof(old_statics)
             metric_interface_nni()
             bgp_rem_config()
             add_initial_policy()
@@ -1928,16 +1984,18 @@ def main():
                 RR_5_L3VPN_CSR() # On Spoke to l3vpn hub facing policy
 
             del_policy_ixre()
+            post_checks()
+            extract_vprn_info(my_file_pd)
             b40_bgp_conf(folder)
 
 #-----------------------------------    BOF and post checks     #----------------------------------------------------------#
-            sys.stdout = open(folder + '/' + name + '_bof.cfg', 'w')
-            bof_data()
-            create_bof(old_statics)
+            #sys.stdout = open(folder + '/' + name + '_bof.cfg', 'w')
+            #bof_data()
+            #create_bof(old_statics)
 
-            sys.stdout = open(folder + '/' + name + '_Post_Checks.txt', 'w')
-            post_checks()
-            extract_vprn_info(my_file_pd)
+            #sys.stdout = open(folder + '/' + name + '_Post_Checks.txt', 'w')
+            #post_checks()
+            #extract_vprn_info(my_file_pd)
 
             os.chdir(cwd)  # up directory
 
