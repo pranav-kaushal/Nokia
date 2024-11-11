@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 3.23
+# Version 3.24
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
 
@@ -75,7 +75,7 @@ def scan_file():
     cwd = os.getcwd() # check for the file in current directory
     file_path = os.listdir(cwd) # list the files
     for i in file_path:
-        if '.cfg' in i: # Chage this to .txt, or .cfg or .log based on your files.
+        if '.cfg' in i or '.log' in i: # Chage this to .txt, or .cfg or .log based on your files.
             my_files.append(i)
     return (my_files, cwd)
 
