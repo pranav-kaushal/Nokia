@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 1.16
+# Version 2.01
 
 import pandas as pd
 import os
@@ -2206,9 +2206,17 @@ def post_checks():
     print ('show router 1 interface')
     print ('show router 4 interface')
     print('show router isis 5 interface ')
-    print ('show router policy')
     print ('show router bgp summary')
-    print ('')
+    print ('show router policy')
+    print ('# If you see old 121 policies left over, please use the following commands without #')
+    left_over_policies_121 = my_file_pd.index[my_file_pd['config'].str.contains('policy-statement')].tolist()
+    #print(left_over_policies_121
+    if left_over_policies_121:
+        print('# /configure router policy-options begin')
+        for polis in left_over_policies_121:
+            print('# no',my_file_pd['config'][polis])
+        print('# commit')
+        print('# exit all')
 
 
 # In[23]:
@@ -2269,7 +2277,7 @@ def main():
         #print(items)
         try:
             create_pd()
-            print(name)
+            #print(name)
 
             # Find what kind of a node is it B40, Ring, Spoke
             grp_peer = my_file_pd.index[my_file_pd['config'].str.contains('group "RR-5-PEER"')].tolist()
@@ -2298,7 +2306,6 @@ def main():
             bgp_remove()
             policy_bgp()
             grp_bgp, grp_count = print_all_bgp_neighbors()
-            print(grp_bgp, grp_count)
 
     #----------------------------------------------------------------------
             if bool(has_B40):        #and len(is_B40)>=1
@@ -2361,7 +2368,7 @@ def main():
 
             sys.stdout = open(folder + '/' + name + '_Post_Checks.txt', 'w')
             post_checks()
-            extract_vprn_info(my_file_pd)
+            #extract_vprn_info(my_file_pd)
 
             os.chdir(cwd)  # up directory
 
