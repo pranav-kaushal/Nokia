@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.4g
+# Version 5.5
 
 import pandas as pd
 import os
@@ -1715,13 +1715,14 @@ def pre_checks():
     print('')
     print('###-----      create system rollback     -------###')
     print('')
+    print('\environment no more ')
+    print('\environment time-stamp ')
     print('/show system rollback')
     print('/admin rollback save comment "Pre-update Checkpoint"')
+    print('/show system rollback')
     print('')
     print('###-----     Precheck commands to run before start of work -----###')
     print('')
-    print('\environment no more ')
-    print('\environment time-stamp ')
     print('admin display-config ')
     print('\show version ')
     print('\show bof ')
@@ -1777,7 +1778,9 @@ def post_checks():
     print ('#--------------------------------------------------')
     print ('#---------- IXR/7705 router post checks ----------"')
     print ('#--------------------------------------------------')
-    print('\show bof ')
+    print('\show bof')
+    print('\show version ')
+    print('\admin display-config ')
     print('\show chassis ')
     print('\show system memory-pools ')
     print('\show card ')
