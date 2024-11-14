@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.5
+# Version 5.5a
 
 import pandas as pd
 import os
@@ -1780,7 +1780,7 @@ def post_checks():
     print ('#--------------------------------------------------')
     print('\show bof')
     print('\show version ')
-    print('\admin display-config ')
+    print('admin display-config ')
     print('\show chassis ')
     print('\show system memory-pools ')
     print('\show card ')
@@ -1824,9 +1824,6 @@ def post_checks():
     print('\show system sync-if-timing')
     print ('show port A/gnss')
     print ('show system ptp port')
-    print ('show router 1 interface')
-    print ('show router 4 interface')
-    print('show router isis 5 interface ')
     print ('show router policy')
     print ('show router bgp summary')
     print ('')
