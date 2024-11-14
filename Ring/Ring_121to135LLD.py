@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 2.01
+# Version 2.02
 
 import pandas as pd
 import os
@@ -279,6 +279,22 @@ def extract_vprn_info(data):
 # In[9]:
 
 
+def search_neigh(description):
+        # Find the start and end
+    group_start_idx = my_file_pd[my_file_pd['config'].str.match('echo "Router')].index[0] 
+    group_end_idx = my_file_pd[my_file_pd['config'].str.match('echo "MPLS')].index[0]
+    new_desc = description.split('-')[-2]
+    #print(new_desc)
+    search_site = my_file_pd.index[my_file_pd['config'].str.contains(new_desc)].tolist()
+    search_site = my_file_pd['config'][search_site]
+    #print(search_site)
+    #print(len(search_site))
+    return len(search_site)
+
+
+# In[10]:
+
+
 # This is only for the node which is connected to B40, it will check for CSR connected to it and the spokes in the ring.
 # So only looking for group "RR-5-ENSESR.
 
@@ -307,9 +323,9 @@ def extract_neighbors(data, start_key):
                 current_neighbor_ip = line.split()[1]
             elif line.startswith('description') and in_neighbor_block:
                 description = line.split(' ', 1)[1].strip('"')
-                if 'B40' not in description and 'Spoke' in description: # Check if there is no B40 but spoke in description
+                if 'B40' not in description and 'Spoke' in description or search_neigh(description) >= 2:
                     spoke_bgp_neighbors[current_neighbor_ip] = description
-                elif 'B40' not in description and 'Spoke' not in description: # Check if there is no B40 and no spoke in description
+                elif 'B40' not in description and 'Spoke' not in description and search_neigh(description) == 1: 
                     csr_bgp_neighbors[current_neighbor_ip] = description
                 in_neighbor_block = False
             elif line == 'exit':
@@ -417,7 +433,7 @@ def RR_5_ENSESR_IRRE_CSR():
 
 
 
-# In[10]:
+# In[11]:
 
 
 def extract_spoke_neighbors(data, start_key, find_value):
@@ -530,7 +546,7 @@ def rr_5_ensesr_spoke(): # This group and policies are for the spoke only
 	new_spoke_bgp_group(new_group, new_description, csr_sp_neighbors ,cluster, start_key, old_import_policy, new_import_policy)
 
 
-# In[11]:
+# In[12]:
 
 
 # --- This is non B40 ring router
@@ -635,7 +651,7 @@ def rr_5_ensesr_csr_peer_east():
 
 
 
-# In[12]:
+# In[13]:
 
 
 #--- This is non B40 ring router
@@ -736,7 +752,7 @@ def rr_5_ensesr_ebh_east():
     add_b40_neighbors(new_description, start_key, b40_neighbors, new_import_policy, new_group, old_import_policy)
 
 
-# In[13]:
+# In[14]:
 
 
 def policy_bgp():
@@ -750,9 +766,9 @@ def policy_bgp():
     except Exception as e:
         print('# No Cluster found')
     
-    print ('#--------------------------------------------------')
+    print('#--------------------------------------------------------#')
     print ('# New Policy Configuration')
-    print ('#--------------------------------------------------')
+    print('#--------------------------------------------------------#')
     print('/configure router')
     print ('        policy-options')
     print ('            begin')
@@ -795,7 +811,7 @@ def bgp_remove():
     
 
 
-# In[14]:
+# In[15]:
 
 
 # Create a function to print all the required bof routes to be added and deleted
@@ -823,7 +839,7 @@ def create_bof(old_statics):
         print("/bof no", routes)
 
 
-# In[15]:
+# In[16]:
 
 
 def policy_RR_5_ENSESR_IRRW_CSR():
@@ -1790,7 +1806,7 @@ def policy_RR_5_ENSESR_CSR_IRR():
     print ('        exit all')
 
 
-# In[16]:
+# In[17]:
 
 
 # Get the interfaces for which the metric has to be changed.
@@ -1881,9 +1897,7 @@ def site_int(): # Interface output
         print('/configure router interface {} egress egress-remark-policy "40021"'.format(interface_desc))
         print('/configure router interface {} bfd 50 receive 50 multiplier 5 type fp'.format(interface_desc))
         print('#--------------------------------------------------------#')
-    #if bool(grp_peer_w) or bool(grp_peer_w):
-    #    for interface_desc, description in metric_interface_b4c.items():
-    #        print('/configure router isis 5 interface {} level 1 metric 10'.format(interface_desc))
+
     # if the interface is for a IRR site facing B40
     if bool(has_B40):
         for interface_desc, description in metric_interface_b40.items():
@@ -1898,66 +1912,50 @@ def site_int(): # Interface output
             print('')
             print('/configure router interface {} no bfd'.format(ints))
             print('/configure router isis 5 interface {} no bfd-enable ipv4'.format(ints))
+    return 
 
 
-# In[17]:
+# In[18]:
 
 
 def port_b4c(data):
     global port_b4c_conf
-    has_B40 = my_file_pd.index[(my_file_pd['config'].str.contains('import "IMPORT_RR-5-ENSESR-CLIENT') & my_file_pd['config'].shift(-6).str.contains('description.*B40'))].tolist()
-    grp_rr_5_ENSESR = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR"')].tolist() #--- These are spokes and CSR 
- 
-    port_b4c_conf = {}
+    metric_interface_b40, metric_interface_b4c = metric_int_hub(my_file_pd)
 
-    try:
-        # Find the start of search keyword
-        group_start_idx = data[data['config'].str.contains('echo "Port ')].index[0] 
-        group_end_idx = data[data['config'].str.contains('echo "System Sync-If')].index[0]
-        
-        # Loop through the subsequent lines to find ports and descriptions
-        in_port_block = False
-        port_desc = None
-    
-        for i in range(group_start_idx, group_end_idx):
-            line = data.at[i, 'config'].strip()
-            
-            if line.startswith('port'):  # Identifying port lines
-                in_port_block = True
-                port_desc = line.split()[1]  # Extract the port ID
-            elif line.startswith('description') and in_port_block:  # Check for description in the port block
-                description = line.split(' ', 1)[1].strip('"')
-                if 'B40' in description or 'B4C' in description or 'c3' in description:
-                    #if 'MG' in description or 'Mg' in description or 'Manag' in description:
-                    port_b4c_conf[port_desc] = description
-            elif line == 'exit':  # Reset when block ends
-                in_port_block = False
-        print('#--------------------------------------------------------#')
-        print('#--------              Port changes          ------------#')
-        print('#--------------------------------------------------------#')
-        print('# Before you make changes please check port description for correct router #')
-        for port_desc, description in port_b4c_conf.items():
-            #print(port_desc, description)
-            print('')
-            if '1/1/c' not in port_desc or '1/1/c3' not in description:
-                print('#port {} '.format(description))
-                print('/configure port {} ethernet util-stats-interval 30'.format(port_desc))
-                print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(port_desc))
-                print('')
-        
-        if bool(has_B40) or bool(grp_rr_5_ENSESR):
-            print('/configure port 1/1/c33/1 ethernet util-stats-interval 30')
-            print('/configure port 1/1/c33/1 ethernet egress-port-qos-policy "40012"'.format(port_desc))
-            print('')
-            print('/configure port 1/1/c34/1 ethernet util-stats-interval 30')
-            print('/configure port 1/1/c34/1 ethernet egress-port-qos-policy "40012"'.format(port_desc))
-            print('')
-    except IndexError:
-        print("# No MGMT port was found, please check the config manually")
-    return port_b4c_conf
+    print('#--------------------------------------------------------#')
+    print('#--------              Port changes          ------------#')
+    print('#--------------------------------------------------------#')
+    print('# Before you make changes please check port description for correct router #')
+    interface_site_names = [value.split(':')[0].split('-')[1] for value in metric_interface_b4c.keys()]
+    for no_items in interface_site_names:
+        print('')
+        print('#port {} '.format(no_items))
+        print('/configure port {} ethernet util-stats-interval 30'.format(no_items))
+        print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(no_items))
+        print('')
+    other_site_names = [value.split(':')[0].split('-')[1] for value in metric_interface_b40.keys()]
+    for no_items in other_site_names:
+        print('')
+        print('#port {} '.format(no_items))
+        print('/configure port {} ethernet util-stats-interval 30'.format(no_items))
+        print('/configure port {} ethernet egress-port-qos-policy "40012"'.format(no_items))
+        print('')
 
 
-# In[18]:
+# In[19]:
+
+
+def port_c33():
+    print('')
+    print('/configure port 1/1/c33/1 ethernet util-stats-interval 30')
+    print('/configure port 1/1/c33/1 ethernet egress-port-qos-policy "40012"')
+    print('')
+    print('/configure port 1/1/c34/1 ethernet util-stats-interval 30')
+    print('/configure port 1/1/c34/1 ethernet egress-port-qos-policy "40012"')
+    print('')
+
+
+# In[20]:
 
 
 def find_unnumbered_int(data):
@@ -1986,16 +1984,8 @@ def find_unnumbered_int(data):
 
     return found_interface, found_unnumbered
 
-# Call the function on your DataFrame
-#scan_file()
-#all_files()
-#for items in path:
-#    create_pd()
-#    unnumbered_ports = find_unnumbered_int(my_file_pd)
-#    print(f"Ports with unnumbered: {unnumbered_ports}")
 
-
-# In[19]:
+# In[21]:
 
 
 def new_qos():
@@ -2066,7 +2056,7 @@ def new_qos():
     print('')
 
 
-# In[20]:
+# In[22]:
 
 
 # B40 group change and check interface to 1000000
@@ -2083,9 +2073,9 @@ def b40_01_changes_ixre(system_ip, name):
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('# Check for the routers interface metric under ISIS 5"')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('admin display-config | match "{}" context all'.format(name))
     print ('/show router isis 5 interface | match "site interface"')
     #print ('/configure router isis 5 interface " level 1 metric 1000000
@@ -2104,9 +2094,9 @@ def b40_02_changes_ixre(system_ip, name):
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('# Check for the routers interface metric under ISIS 5"')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('admin display-config | match "{}" context all'.format(name))
     print ('/show router isis 5 interface | match "site interface"')
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
@@ -2120,7 +2110,7 @@ def b40_01_rollback_ixre(system_ip, name):
     print ('')
     print ('###################################################')
     print ('#     ROLLBACK FOR B40-01     "')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR_IRR" no neighbor {}'.format(system_ip))
     print ('exit all')
@@ -2131,7 +2121,7 @@ def b40_01_rollback_ixre(system_ip, name):
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
 
 
 def b40_02_rollback_ixre(system_ip, name):
@@ -2140,7 +2130,7 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('')
     print ('###################################################')
     print ('#     ROLLBACK FOR B40-02     "')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR_IRR" no neighbor {}'.format(system_ip))
     print ('exit all')
@@ -2151,23 +2141,23 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('# Check for the routers interface metric under ISIS 5"')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('admin display-config | match "{}" context all'.format(name))
     print ('/show router isis 5 interface | match "site interface"')
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
-# In[21]:
+# In[23]:
 
 
 # Post check ping check script / 
 def pre_post_b40():
     print ('')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('# Local IXRE post checks "')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('show service sap-using')
     print ('show port A/gnss')
     print ('show system ptp port')
@@ -2181,9 +2171,9 @@ def pre_post_b40():
     print ('show router bgp summary')
     print ('show router isis 5 adjancency')
     print ('')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print ('# B40 post checks for pinging CSR interfaces from B40-01 and 02"')
-    print ('#--------------------------------------------------')
+    #--------------------------------------------------------#
     print('\show router bgp summary')
     for ran in vprn1_ip:
         print('ping router-instance "RAN" {}'.format(ran.split('/', 1)[0][8:]))
@@ -2191,7 +2181,7 @@ def pre_post_b40():
         print('ping router-instance "CELL_MGMT" {}'.format(mgm.split('/', 1)[0][8:]))
 
 
-# In[22]:
+# In[24]:
 
 
 # Post check ping check script / 
@@ -2219,7 +2209,7 @@ def post_checks():
         print('# exit all')
 
 
-# In[23]:
+# In[25]:
 
 
 def all_bgp_neighbors(data):
@@ -2264,7 +2254,7 @@ def print_all_bgp_neighbors():
     return grp_bgp, grp_count
 
 
-# In[24]:
+# In[26]:
 
 
 def main():
@@ -2302,10 +2292,12 @@ def main():
             metric_int_hub(my_file_pd)
             site_int()
             new_qos()
+            grp_bgp, grp_count = print_all_bgp_neighbors()
             port_b4c(my_file_pd)
+            #if bool(grp_r5_enesr_client) or bool(has_B40):    #(for ring node or IRRE or IRRW ports)
+            #    port_c33()
             bgp_remove()
             policy_bgp()
-            grp_bgp, grp_count = print_all_bgp_neighbors()
 
     #----------------------------------------------------------------------
             if bool(has_B40):        #and len(is_B40)>=1
@@ -2315,38 +2307,30 @@ def main():
                     rr_5_ensesr_ebh_west() # (tested)
                     if bool(grp_rr_5_ENSESR):
                         spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
-                        #print(spoke_bgp_neighbors, csr_bgp_neighbors)
                         if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
                             delete_spoke_csr_bgp_neighbors()
-                        #if len(spoke_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRW_SPOKE() # for west spokes
                             RR_5_ENSESR_IRRW_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke west neighbors
-                        #if len(csr_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRW_CSR() # policy for the CSR non spoke ixre
                             RR_5_ENSESR_IRRW_CSR() # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
+                    if bool(grp_peer):
+                        policy_RR_5_ENSESR_IRRW_IRR()
+                        rr_5_ensesr_csr_peer_west()
                 if '02' in b40_name_get():
                     print("# This is a East Node")
                     policy_RR_5_ENSESR_IRRE_EBH() # for ring b40 node (tested)
                     rr_5_ensesr_ebh_east() # (tested)
                     if bool(grp_rr_5_ENSESR):
                         spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
-                        #print(spoke_bgp_neighbors, csr_bgp_neighbors)
                         if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
                             delete_spoke_csr_bgp_neighbors()
-                        #if len(spoke_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRE_SPOKE() # for east spokes
                             RR_5_ENSESR_IRRE_SPOKE() #group "RR-5-ENSESR_SPOKE" for spoke east neighbors
-                        #if len(csr_bgp_neighbors)>=1:
                             policy_RR_5_ENSESR_IRRE_CSR() # policy for the CSR non spoke ixre
                             RR_5_ENSESR_IRRE_CSR() # group "RR-5-ENSESR_CSR" for non spoke csr neighbors
-        #----------------------------------------------------------------------------------------------------------------#
-            if bool(grp_peer_e) and '02' in b40_name:
-            #    print(grp_peer_e)
-                policy_RR_5_ENSESR_IRRE_IRR()
-                rr_5_ensesr_csr_peer_east()
-            if bool(grp_peer_w) and '01' in b40_name:
-                policy_RR_5_ENSESR_IRRW_IRR()
-                rr_5_ensesr_csr_peer_west()                
+                    if bool(grp_peer):
+                        policy_RR_5_ENSESR_IRRE_IRR()
+                        rr_5_ensesr_csr_peer_east()              
  #-----------------------------------    Ring Node    ------------------------------------------------#               
             if bool(grp_r5_enesr_client) and grp_count == 2 and not bool(has_B40): #and not bool(grp_peer): # If it has no B40 and is a Ring node
                 policy_RR_5_ENSESR_CSR_IRR() # for CSR that is not a spoke
@@ -2378,7 +2362,7 @@ def main():
             continue  # skip to  next item in the for loop
 
 
-# In[25]:
+# In[27]:
 
 
 if __name__ == "__main__":
