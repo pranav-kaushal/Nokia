@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 2.02
+# Version 2.03
 
 import pandas as pd
 import os
@@ -285,7 +285,8 @@ def search_neigh(description):
     group_end_idx = my_file_pd[my_file_pd['config'].str.match('echo "MPLS')].index[0]
     new_desc = description.split('-')[-2]
     #print(new_desc)
-    search_site = my_file_pd.index[my_file_pd['config'].str.contains(new_desc)].tolist()
+    #search_site = my_file_pd.index[my_file_pd['config'].str.contains(new_desc)].tolist()
+    search_site = my_file_pd.index[(my_file_pd['config'].str.contains(new_desc) & ~ my_file_pd['config'].shift(1).str.contains('port.*1/1/c3', na=False))].tolist()
     search_site = my_file_pd['config'][search_site]
     #print(search_site)
     #print(len(search_site))
@@ -323,9 +324,9 @@ def extract_neighbors(data, start_key):
                 current_neighbor_ip = line.split()[1]
             elif line.startswith('description') and in_neighbor_block:
                 description = line.split(' ', 1)[1].strip('"')
-                if 'B40' not in description and 'Spoke' in description or search_neigh(description) >= 2:
+                if 'B40' not in description and 'Spoke' in description or search_neigh(description) == 3:
                     spoke_bgp_neighbors[current_neighbor_ip] = description
-                elif 'B40' not in description and 'Spoke' not in description and search_neigh(description) == 1: 
+                elif 'B40' not in description and 'Spoke' not in description and search_neigh(description) <= 2:
                     csr_bgp_neighbors[current_neighbor_ip] = description
                 in_neighbor_block = False
             elif line == 'exit':
@@ -630,7 +631,7 @@ def new_ring_bgp_group(new_group, new_description, ring_neighbors, cluster, star
 def rr_5_ensesr_csr_peer_west():
 	start_key = 'group "RR-5-PEER"' #(Old group name)
 	old_import_policy = 'IMPORT_RR-5-PEER'
-	find_value = 'B4C'
+	find_value = 'to'
 	new_group = 'group "RR-5-ENSESR_IRR"'
 	new_description = 'IRR-W to IRR-E' 
 	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRW-IRR' 
@@ -803,7 +804,11 @@ def bgp_remove():
     print('/configure router bgp multi-path maximum-paths 16')
     #print('/configure router bgp selective-label-ipv4-install')
     print('/configure router bgp rapid-update vpn-ipv4 vpn-ipv6 evpn label-ipv4')
-    print('/configure router bgp error-handling update-fault-tolerance')
+    print('/configure router bgp error-handling update-fault-tolerance
+    print('/configure router bgp no keepalive')
+    print('/configure router bgp no hold-time')
+    print('/configure router bgp multi-path maximum-paths 16 np ipv4')
+    print('/configure router bgp multi-path maximum-paths 16 np ipv6')
     #print('/config router bgp no initial-send-delay-zero')
     print('exit all')
     print('#---------------------------------------------------------#')
@@ -1919,7 +1924,6 @@ def site_int(): # Interface output
 
 
 def port_b4c(data):
-    global port_b4c_conf
     metric_interface_b40, metric_interface_b4c = metric_int_hub(my_file_pd)
 
     print('#--------------------------------------------------------#')
