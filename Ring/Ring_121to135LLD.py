@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 2.03
+# Version 2.03a
 
 import pandas as pd
 import os
@@ -804,7 +804,7 @@ def bgp_remove():
     print('/configure router bgp multi-path maximum-paths 16')
     #print('/configure router bgp selective-label-ipv4-install')
     print('/configure router bgp rapid-update vpn-ipv4 vpn-ipv6 evpn label-ipv4')
-    print('/configure router bgp error-handling update-fault-tolerance
+    print('/configure router bgp error-handling update-fault-tolerance')
     print('/configure router bgp no keepalive')
     print('/configure router bgp no hold-time')
     print('/configure router bgp multi-path maximum-paths 16 np ipv4')
