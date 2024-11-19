@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 2.03a
+# Version 2.04
 
 import pandas as pd
 import os
@@ -642,7 +642,7 @@ def rr_5_ensesr_csr_peer_west():
 def rr_5_ensesr_csr_peer_east():
 	start_key = 'group "RR-5-PEER"' #(Old group name)
 	old_import_policy = 'IMPORT_RR-5-PEER'
-	find_value = 'B4C'
+	find_value = 'to'
 	new_group = 'group "RR-5-ENSESR_IRR"'
 	new_description = 'IRR-E to IRR-W' 
 	new_import_policy = 'IMPORT_RR-5-ENSESR_IRRE-IRR' 
@@ -807,8 +807,8 @@ def bgp_remove():
     print('/configure router bgp error-handling update-fault-tolerance')
     print('/configure router bgp no keepalive')
     print('/configure router bgp no hold-time')
-    print('/configure router bgp multi-path maximum-paths 16 np ipv4')
-    print('/configure router bgp multi-path maximum-paths 16 np ipv6')
+    print('/configure router bgp multi-path no ipv4')
+    print('/configure router bgp multi-path no ipv6')
     #print('/config router bgp no initial-send-delay-zero')
     print('exit all')
     print('#---------------------------------------------------------#')
