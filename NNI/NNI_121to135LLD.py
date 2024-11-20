@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.6
+# Version 5.6a
 
 import pandas as pd
 import os
@@ -418,7 +418,7 @@ def print_bgp_ll_neighbors(neighbors, start_key, old_import_policy, new_group, n
 def print_bgp_ll_neighbors_7705(neighbors, start_key, old_import_policy, new_group, new_description, new_import_policy):
 	global neighbor_ip, ll_7705_details
 	try:
-		local_as = my_file_pd['config'][ my_file_pd.index[my_file_pd['config'].str.contains('local-as')].tolist()[0]].split()[1]
+		local_as = my_file_pd['config'][ my_file_pd.index[my_file_pd['config'].str.contains('peer-as')].tolist()[0]].split()[1]
 	except:
 		print('# No Local-As found')
 
