@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.6a
+# Version 5.6b
 
 import pandas as pd
 import os
@@ -1801,7 +1801,7 @@ def post_checks():
 def b40_01_changes_ixre(old_grp, new_grp, system_ip, name):
     print ('### Remove neighbor from 121 bgp group ')
     print ('/configure router bgp group "{}" neighbor {} shutdown'.format(old_grp, system_ip))
-    print ('/configure router bgp group "RR-5-ENSESR" no neighbor {}'.format(old_grp, system_ip))
+    print ('/configure router bgp group "{}" no neighbor {}'.format(old_grp, system_ip))
     print ('exit all')
     print ('')
     print ('### Add neighbor to 135 bgp group')
