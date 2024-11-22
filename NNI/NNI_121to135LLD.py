@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.6b
+# Version 5.7
 
 import pandas as pd
 import os
@@ -1473,7 +1473,10 @@ def policy_RR_5_L3VPN_CSR_SPOKE():
     print ('                    action accept')
     print ('                    exit')
     print ('                exit')
-    print ('                default-action drop')
+    if '7705' in router_type:
+        print ('                default-action reject')
+    if '7250' in router_type:
+        print ('                default-action drop')
     print ('            exit')
     print ('            policy-statement "IMPORT_RR-5-L3VPN_CSR-SPOKE"')
     print ('                description "IMPORT ROUTES FROM A SPOKE"')
@@ -1482,7 +1485,10 @@ def policy_RR_5_L3VPN_CSR_SPOKE():
     print ('                    from')
     print ('                        prefix-list "PRFX_DEFAULT"')
     print ('                    exit')
-    print ('                    action drop')
+    if '7705' in router_type:
+        print ('                    action reject')
+    if '7250' in router_type:
+        print ('                    action drop')
     print ('                    exit')
     print ('                exit')
     print ('                entry 10')
@@ -1505,7 +1511,10 @@ def policy_RR_5_L3VPN_CSR_SPOKE():
     print ('                    action accept')
     print ('                    exit')
     print ('                exit')
-    print ('                default-action drop')
+    if '7705' in router_type:
+        print ('                default-action reject')
+    if '7250' in router_type:
+        print ('                default-action drop')
     print ('            exit')
     print ('            commit')
     print ('        exit')
@@ -1523,7 +1532,10 @@ def policy_RR_5_L3VPN_SPOKE_CSR():
     print ('                    from')
     print ('                        prefix-list "PRFX_DEFAULT"')
     print ('                    exit')
-    print ('                    action reject')
+    if '7705' in router_type:
+        print ('                    action reject')
+    if '7250' in router_type:
+        print ('                    action drop')
     print ('                exit')
     print ('                entry 10')
     print ('                    description "SEND MY LOOPBACK LABEL WITH SID"')
@@ -1568,7 +1580,10 @@ def policy_RR_5_L3VPN_SPOKE_CSR():
     print ('                    action accept')
     print ('                    exit')
     print ('                exit')
-    print ('                default-action reject')
+    if '7705' in router_type:
+        print ('                default-action reject')
+    if '7250' in router_type:
+        print ('                default-action drop')
     print ('            exit')
     print ('            policy-statement "IMPORT_RR-5-L3VPN_SPOKE-CSR"')
     print ('                description "IMPORT ROUTES FROM A CSR"')
@@ -1915,7 +1930,7 @@ def main():
                 policy_RR_5_ENSESR_CSR_EBH()
                 policy_RR_5_ENSESR_CSR_EBH_LL()
                 RR_5_ENSESR_EBH_LL() # This is a HUB policy for LL and non LL neighbors
-                b40_bgp_conf('RR-5-ENSESR', 'RR-5-ENSESR_CSR', folder)
+
                                 
             if bool(csr_ixre_spoke):
                 policy_RR_5_ENSESR_CSR_SPOKE()
@@ -1934,7 +1949,7 @@ def main():
                 policy_RR_5_L3VPN_CSR_EBH()
                 policy_RR_5_L3VPN_CSR_EBH_LL()
                 RR_5_L3VPN_EBH_LL() # This is a L3VPN HUB policy for LL and non LL neighbors for any 7705 downstream
-                b40_bgp_conf('RR-5-L3VPN', 'RR-5-L3VPN_CSR', folder)
+
 
             if bool(csr_ixre_7705_grp) and not bool(has_b40_bgp):
                 policy_RR_5_L3VPN_SPOKE_CSR()
@@ -1943,8 +1958,11 @@ def main():
             del_policy_ixre()
             post_checks()
             extract_vprn_info(my_file_pd)
-            
-
+#-------------------------------    BOF for HUB IXR and 7705    ----------------------------------------------------------#
+            if bool(csr_ixre_grp) and bool(csr_ixre_al) and bool(csr_ixre_al_ll):
+                b40_bgp_conf('RR-5-ENSESR', 'RR-5-ENSESR_CSR', folder)
+            if bool(csr_ixre_7705_grp) and bool(has_b40_bgp):
+                b40_bgp_conf('RR-5-L3VPN', 'RR-5-L3VPN_CSR', folder)
 #-----------------------------------    BOF and post checks     #----------------------------------------------------------#
             #sys.stdout = open(folder + '/' + name + '_bof.cfg', 'w')
             #bof_data()
