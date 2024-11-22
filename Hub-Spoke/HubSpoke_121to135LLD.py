@@ -5,7 +5,8 @@
 
 
 # Import required libraries
-# Version 3.24
+# Version 4.0
+# Date 11/22/2024
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
 
@@ -193,6 +194,8 @@ def create_bof(old_statics):
     print(static_route_new_3)
     if '7705' in router_type:
         print('/bof speed 100')
+    elif 'B4B' in name:
+        print('')
     else:
         print('/bof speed 1000')
     print('')
@@ -233,49 +236,13 @@ def create_bof_b4e(old_statics):
         print("/bof no", routes)
 
 
+# In[ ]:
+
+
+
+
+
 # In[7]:
-
-
-def create_bof_B4B(old_statics):
-    data = my_file_pd
-
-    try:
-        # Find the start and end indices
-        group_start_idx = data[data['config'].str.contains('BOF \(Memory\)', regex=True)].index[0]
-        group_end_idx = data[data['config'].str.contains('persist', regex=True)].index[0]
-    
-        subset_data = data.iloc[group_start_idx:group_end_idx]
-    
-        add_values = subset_data[subset_data['config'].str.contains('address', regex=True)]['config'].values
-        pri_img_values = subset_data[subset_data['config'].str.contains('primary-image', regex=True)]['config'].values
-        pril_conf_values = subset_data[subset_data['config'].str.contains('primary-config', regex=True)]['config'].values
-    except IndexError:
-        print("No BOF or persist found. Please check the config manually.")
-
-    
-    print('===============================================================================')
-    print('BOF (Memory)')
-    print('===============================================================================')
-    print('    {}'.format(pri_img_values[0]))
-    print('    {}'.format(pril_conf_values[0]))
-    print('    {}'.format(add_values[0]))
-    print('    static-route 2001:4888::/32 next-hop ' + static_next_hop)
-    print('    static-route 2600::/16 next-hop ' + static_next_hop)
-    print('    static-route 2607::/16 next-hop ' + static_next_hop)
-    print('    no autonegotiate')
-    print('    duplex           full')
-    print('    speed            1000')
-    print('    wait             3')
-    print('    persist          on')
-    print('    no li-local-save')
-    print('    no li-separate')
-    print('    no fips-140-2')
-    print('    console-speed    9600')
-    print('===============================================================================')
-     
-
-
-# In[8]:
 
 
 # Get the interfaces for which the metric has to be changed.
@@ -345,7 +312,7 @@ def metric_interface_b4a(): # Interface output
     
 
 
-# In[9]:
+# In[8]:
 
 
 def metric_int_b4b(data):
@@ -431,7 +398,7 @@ def print_metric_interface_b4b():  # Interface output
         print('')
 
 
-# In[10]:
+# In[9]:
 
 
 # Add ip filter on B4B
@@ -503,7 +470,7 @@ def ip_filter_10005_b4b():
         print('    exit all')
 
 
-# In[11]:
+# In[10]:
 
 
 #This code is for B4A
@@ -558,7 +525,7 @@ def port_bfd(data):
 #print(description)
 
 
-# In[12]:
+# In[11]:
 
 
 def port_b4e(data):
@@ -602,7 +569,7 @@ def port_b4e(data):
         print("# No MGMT port was found, please check the config manually")
 
 
-# In[13]:
+# In[12]:
 
 
 # Get the interfaces for which the metric has to be changed.
@@ -675,7 +642,7 @@ def interface_b4c(): # Interface output
     
 
 
-# In[14]:
+# In[13]:
 
 
 # Get the interfaces for which the metric has to be changed.
@@ -794,7 +761,7 @@ def interface_qos_b4s():
         print('#------------------------------------------------------------------#')
 
 
-# In[15]:
+# In[14]:
 
 
 def bgp_remove_b4b():
@@ -831,7 +798,7 @@ def bgp_remove_b4c():
     print('#---------------------------------------------------------#')
 
 
-# In[16]:
+# In[15]:
 
 
 def policy_bgp():
@@ -868,7 +835,7 @@ def policy_remove():
     print('exit all')
 
 
-# In[17]:
+# In[16]:
 
 
 # Policies for B4A ##################################################
@@ -1120,7 +1087,7 @@ def policy_RR_5_L3VPN_AL_CSR():
 ################################################
 
 
-# In[18]:
+# In[17]:
 
 
 # Policies for B4B ##################################################
@@ -1324,7 +1291,7 @@ def policy_RR_5_ENSESR_BL_EBH():
 
 
 
-# In[19]:
+# In[18]:
 
 
 # Policies for B4C ##################################################
@@ -1819,7 +1786,7 @@ def policy_RR_5_L3VPN_CSR_AL():
     print ('        exit all')
 
 
-# In[20]:
+# In[19]:
 
 
 def extract_bgp_neighbors(data, start_key, end_key, find_value):
@@ -1873,7 +1840,7 @@ def extract_bgp_neighbors(data, start_key, end_key, find_value):
 
 
 
-# In[21]:
+# In[20]:
 
 
 def new_bgp_group(new_group, new_description,cluster_value, return_value, start_key, old_import_policy, new_import_policy):
@@ -1969,7 +1936,7 @@ def new_7705_bgp_group(new_group, new_description,cluster_value, return_value, s
     print('#--------------------------------------------------------#')
 
 
-# In[22]:
+# In[21]:
 
 
 ######################## Groups for B4A ###########################
@@ -2009,7 +1976,7 @@ def rr_5_ensesr_csr_b4a(): # B4A Facing IXRE DRAN downstream
 
 
 
-# In[23]:
+# In[22]:
 
 
 ######################## Groups for B4B ###########################
@@ -2056,7 +2023,7 @@ def rr_5_ENSESR_b4b():  #  Facing B4A
 	new_bgp_group(new_group, new_description,cluster_value, return_value, start_key, old_import_policy, new_import_policy)
 
 
-# In[24]:
+# In[23]:
 
 
 ######################## Groups for B4C  #####################
@@ -2179,7 +2146,7 @@ def rr_5_7705s_7705h(): # 7705 Spoke facing 7705 Hub
 	new_7705_bgp_group(new_group, new_description,cluster_value, return_value, start_key, old_import_policy, new_import_policy)
 
 
-# In[25]:
+# In[24]:
 
 
 # B40 group change and check interface to 1000000
@@ -2272,7 +2239,7 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('# If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
-# In[26]:
+# In[25]:
 
 
 # Post check ping check script / 
@@ -2301,7 +2268,7 @@ def post_b40_ping():
         print('ping router-instance "CELL_MGMT" {}'.format(mgm.split('/', 1)[0][8:]))
 
 
-# In[27]:
+# In[26]:
 
 
 def b4a_qos():
@@ -2325,7 +2292,7 @@ def b4a_qos():
     print('exit all')
 
 
-# In[28]:
+# In[27]:
 
 
 def b4b_b40_bgp_conf():
@@ -2396,7 +2363,7 @@ def system_conf_7705():
         print('exit all')
 
 
-# In[29]:
+# In[28]:
 
 
 def main():
@@ -2488,7 +2455,7 @@ def main():
             sys.stdout = open(folder + '/' + name +'_bof.cfg','w')
             get_bof(my_file_pd)
             bof_data()
-            create_bof_B4B(old_statics)
+            create_bof(old_statics)
                         
             # Run the following B40 script based on the B40-01 or 02 the node is connected to.
             b4b_b40_bgp_conf()      
@@ -2585,7 +2552,7 @@ def main():
         os.chdir("..")  # Move up one directory
 
 
-# In[30]:
+# In[29]:
 
 
 if __name__ == "__main__":
