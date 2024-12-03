@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 4.0
+# Version 4.1
 # Date 11/22/2024
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
@@ -548,7 +548,7 @@ def port_b4e(data):
                 port_desc = line.split()[1]  # Extract the port ID
             elif line.startswith('description') and in_port_block:  # Check for description in the port block
                 description = line.split(' ', 1)[1].strip('"')
-                if 'B4A' in description or 'B4B' in description or 'B4S' in description or 'SR1' in description or 'IXR' in description:
+                if 'B4A' in description or 'B4S' in description or 'SR1' in description or 'IXR' in description:
                     if 'MG' in description or 'Mg' in description or 'Manag' in description:
                         mgmt_port_b4e[port_desc] = description
             elif line == 'exit':  # Reset when block ends
