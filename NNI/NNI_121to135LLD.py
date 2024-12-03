@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.7
+# Version 5.7a
 
 import pandas as pd
 import os
@@ -130,7 +130,7 @@ def create_pd():
         ecmp_value = ecmp.split()
         #print(ecmp_value[1])
     except IndexError:
-        print("# No ecmp found")
+        print("# ERROR: No ecmp found")
     
     sys = my_file_pd.index[my_file_pd['config'].str.contains('router-id')]
     router_id_row = my_file_pd['config'][sys].iloc[0]
@@ -162,7 +162,7 @@ def get_bof(data):
                 static_next_hop = line.split('next-hop')[1].strip()
                 break  # Just the first static
     except IndexError:
-        print("No BOF address or static route found. Please check the config manually")
+        print("ERROR: No BOF address or static route found. Please check the config manually")
     
     #return bof_address_ip, static_next_hop
 def bof_data():
@@ -247,7 +247,7 @@ def metric_nni(data):
             elif line == 'exit':
                 in_neighbor_block = False
     except IndexError:
-        print("No B4C/B40 interface was found, Please check the config manually")
+        print("# ERROR: No B4C/B40 interface was found, Please check the config manually")
 
     return met_int_b4c, met_int_b40
 
@@ -327,7 +327,7 @@ def extract_LL_bgp_neighbors(data, start_key, end_key, find_value):
                 in_neighbor_block = False
 
     except IndexError:
-        print("# The target BGP group was not found in the file.")
+        print("# ERROR: The target BGP group was not found in the file.")
         
     return return_value, cluster 
 
@@ -757,7 +757,7 @@ def new_7705_bgp_group(neighbors, new_group, new_description, start_key, old_imp
     print('    {}'.format(new_group))
     print('                description "{}"'.format(new_description))
     print('                family vpn-ipv4 vpn-ipv6 label-ipv4')
-    #print('                type internal')
+    print('                type internal')
 
     # Only print the cluster value if it exists (not None)
     if cluster_value is not None:
@@ -1960,6 +1960,7 @@ def main():
             extract_vprn_info(my_file_pd)
 #-------------------------------    BOF for HUB IXR and 7705    ----------------------------------------------------------#
             if bool(csr_ixre_grp) and bool(csr_ixre_al) and bool(csr_ixre_al_ll):
+                print("yessssssss")
                 b40_bgp_conf('RR-5-ENSESR', 'RR-5-ENSESR_CSR', folder)
             if bool(csr_ixre_7705_grp) and bool(has_b40_bgp):
                 b40_bgp_conf('RR-5-L3VPN', 'RR-5-L3VPN_CSR', folder)
