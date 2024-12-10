@@ -5,8 +5,8 @@
 
 
 # Import required libraries
-# Version 4.1
-# Date 11/22/2024
+# Version 4.2
+# Date 12/10/2024
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
 
@@ -142,7 +142,7 @@ def create_pd():
         print("No system interface found")
 
 
-# In[6]:
+# In[1]:
 
 
 def get_bof(data):
@@ -209,6 +209,9 @@ def create_bof(old_statics):
         routes = my_file_pd['config'][rts]
         routes = re.sub(r' {4,}', ' ', routes)
         print("/bof no", routes)
+    print('')
+    print('bof save')
+    
 
 
 
@@ -234,6 +237,8 @@ def create_bof_b4e(old_statics):
         routes = my_file_pd['config'][rts]
         routes = re.sub(r' {4,}', ' ', routes)
         print("/bof no", routes)
+    print('')
+    print('bof save')
 
 
 # In[ ]:
@@ -562,7 +567,7 @@ def port_b4e(data):
             print('')
             print('#port {} '.format(description))
             print('/configure port {} ethernet speed 1000'.format(port_desc))
-            print('/configure port {} ethernet auto negotiate'.format(port_desc))
+            print('/configure port {} ethernet autonegotiate'.format(port_desc))
             print('')
         
     except IndexError:
