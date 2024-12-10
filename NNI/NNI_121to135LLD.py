@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.7a
+# Version 5.8
 
 import pandas as pd
 import os
@@ -887,7 +887,7 @@ def bgp_rem_config():
 def L3VPN_CSR_SPOKE_7705(): # IXRE hub Facing 7705 Spoke
 	data = my_file_pd
 	start_key = 'group "RR-5-L3VPN"' #(Old group name)
-	old_import_policy = 'IMPORT_RR_5_L3VPN'
+	old_import_policy = 'IMPORT_RR_5-L3VPN'
 	end_key = 'echo "Log all events for service vprn'
 	find_value = 'B4C'
 	new_group = 'group "RR-5-L3VPN_SPOKE"'
@@ -1478,6 +1478,7 @@ def policy_RR_5_L3VPN_CSR_SPOKE():
     if '7250' in router_type:
         print ('                default-action drop')
     print ('            exit')
+    print ('        exit')
     print ('            policy-statement "IMPORT_RR-5-L3VPN_CSR-SPOKE"')
     print ('                description "IMPORT ROUTES FROM A SPOKE"')
     print ('                entry 5')
@@ -1516,6 +1517,7 @@ def policy_RR_5_L3VPN_CSR_SPOKE():
     if '7250' in router_type:
         print ('                default-action drop')
     print ('            exit')
+    print ('        exit')
     print ('            commit')
     print ('        exit')
     print ('exit all')
@@ -1960,7 +1962,6 @@ def main():
             extract_vprn_info(my_file_pd)
 #-------------------------------    BOF for HUB IXR and 7705    ----------------------------------------------------------#
             if bool(csr_ixre_grp) and bool(csr_ixre_al) and bool(csr_ixre_al_ll):
-                print("yessssssss")
                 b40_bgp_conf('RR-5-ENSESR', 'RR-5-ENSESR_CSR', folder)
             if bool(csr_ixre_7705_grp) and bool(has_b40_bgp):
                 b40_bgp_conf('RR-5-L3VPN', 'RR-5-L3VPN_CSR', folder)
