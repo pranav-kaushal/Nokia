@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 5.8
+# Version 5.9
 
 import pandas as pd
 import os
@@ -209,7 +209,8 @@ def create_bof(old_statics):
     for rts in old_statics:
         routes = my_file_pd['config'][rts]
         routes = re.sub(r' {4,}', ' ', routes)
-        print("/bof no", routes)
+        if '::/32' not in routes and '::/16' not in routes:
+            print("/bof no", routes)
     print('')
     print('/show bof')
 
