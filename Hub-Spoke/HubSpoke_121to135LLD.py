@@ -5,7 +5,7 @@
 
 
 # Import required libraries
-# Version 4.4
+# Version 4.4a
 # Date 12/18/2024
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
@@ -2531,11 +2531,11 @@ def metric_interface_dual_b4a(): # Interface output
             print('###########        LLD 135 Dual B4A connected B4C      ############')
             print('###################################################################')
             print('#--------------------------------------------------')
-            print('# Change Interface Metric for High latency link')
+            print('# Change Interface Metric for High latency link on {}'.format(b4a_name))
             print('#--------------------------------------------------')
             print('')
             for interface_desc, description in met_int_dual_b4a.items():
-                print(description)
+                print('# Interface description on B4A is {}'.format(description))
                 if 'B4C' in description:
                     print('/configure router isis 5 interface {} level 1 metric 1000010'.format(interface_desc))
             print('')
@@ -2712,8 +2712,8 @@ def main():
             return_value = dualb4a_bgp_neighbors(my_file_pd)
             b4a_dual_search(return_value)
             if check_dual:
-                sys.stdout = open(folder + '/' + name + '_Dual_connected_B4C.txt', 'w')
                 b4a_dual_neigh(return_value)
+                sys.stdout = open(folder + '/' + b4a_name + '_Dual_connected_B4C.txt', 'w')
                 metric_interface_dual_b4a()
         
         ##################################
