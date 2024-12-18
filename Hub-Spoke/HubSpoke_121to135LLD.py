@@ -2424,9 +2424,8 @@ def dualb4a_bgp_neighbors(data):
 
 
 def b4a_dual_search(return_value):
-    global search_string,b4a_file_pd, b4a_name
-    b4a_path = []
-    
+    global search_string, check_dual
+    check_dual = False
     start_key = 'group "RR-5-ENSESR-CLIENT"'
     end_key = 'echo "Log all events for service vprn'
     return_value = dualb4a_bgp_neighbors(my_file_pd)
@@ -2445,9 +2444,17 @@ def b4a_dual_search(return_value):
     #print(policy_list)
     if policy_list[0] == policy_list[1]:
         print('# This is a dual B4A connected B4C')
+        check_dual = True
     else:
         print('# This is not a dual B4A connected B4C')
+    return check_dual
         
+def b4a_dual_neigh(return_value):
+    global b4a_file_pd, b4a_name
+    b4a_path = []
+    b4a_file_pd = None  # Default value if no file is found
+    b4a_name = None  # Default value if no file is found
+    
     for neighbor, details in return_value.items():
         if 'LL' not in details.get('import', ''):
             search_string = re.sub(r'\bto\b\s*(?=[A-Z])', '', details['description'])
@@ -2463,22 +2470,17 @@ def b4a_dual_search(return_value):
                 b4a_file_pd = pd.read_fwf(file_to_read, index_col=False, header=None, sep=' ')
                 b4a_file_pd = b4a_file_pd.rename(columns={0: "config"})
                 #print(b4a_file_pd.head())
+                # Get site name
+                b4a_site_name = b4a_file_pd.index[b4a_file_pd['config'].str.contains("name")]
+                b4a_name = b4a_file_pd['config'][b4a_site_name[0]]
+                b4a_name = b4a_name[6:].strip('"')
             except Exception as e:
                 print(f"# Error reading file: {e}")
         else:
             print(f"# Error: {file_to_read} is not there, please add it in same folder.")
     else:
-        print("No B4A file found.")
-    
-    
-    
-        # Get site name
-    b4a_site_name = b4a_file_pd.index[b4a_file_pd['config'].str.contains("name")]
-    b4a_name = b4a_file_pd['config'][b4a_site_name[0]]
-    b4a_name = b4a_name[6:].strip('"')
-        #sys.stdout = open(folder + '/' + b4a_name + '_Dual_B4C_Script.txt', 'w')
-        
-        #print('# The {} file is missing'.format(search_string))
+        print(" ERROR: No B4A file found.")
+
     return b4a_file_pd, b4a_name
 
 
@@ -2520,30 +2522,28 @@ def dual_b4a_metric_nni(data):
 
 
 def metric_interface_dual_b4a(): # Interface output 
-    met_int_dual_b4a = dual_b4a_metric_nni(b4a_file_pd)
-    os.chdir("..")  # Move up one directory
-    if not os.path.isdir(b4a_name):
-        os.mkdir(b4a_name)
-        os.chdir(b4a_name)
-        folder = os.getcwd()
+    
+    if 'b4a_file_pd' in globals() and b4a_file_pd is not None:
+        try:
+            met_int_dual_b4a = dual_b4a_metric_nni(b4a_file_pd)  
+            print('')
+            print('###################################################################')
+            print('###########        LLD 135 Dual B4A connected B4C      ############')
+            print('###################################################################')
+            print('#--------------------------------------------------')
+            print('# Change Interface Metric for High latency link')
+            print('#--------------------------------------------------')
+            print('')
+            for interface_desc, description in met_int_dual_b4a.items():
+                print(description)
+                if 'B4C' in description:
+                    print('/configure router isis 5 interface {} level 1 metric 1000010'.format(interface_desc))
+            print('')
+        except Exception as e:
+            print(f"Error processing b4a_file_pd: {e}")
+
     else:
-        os.chdir(b4a_name)
-        folder = os.getcwd()
-        os.chdir(cwd)
-    sys.stdout = open(folder + '/' + b4a_name + '_Dual_connected_B4C.txt', 'w')
-    print('')
-    print('###################################################################')
-    print('###########        LLD 135 Dual B4A connected B4C      ############')
-    print('###################################################################')
-    print('#--------------------------------------------------')
-    print('# Change Interface Metric for High latency link')
-    print('#--------------------------------------------------')
-    print('')
-    for interface_desc, description in met_int_dual_b4a.items():
-        print(description)
-        if 'B4C' in description:
-            print('/configure router isis 5 interface {} level 1 metric 1000010'.format(interface_desc))
-    print('')
+        print('# ERROR: No data file created due to missing B4A file.')
 
 
 # In[32]:
@@ -2711,7 +2711,10 @@ def main():
             # Dual B4C to B4A config generation ###########################
             return_value = dualb4a_bgp_neighbors(my_file_pd)
             b4a_dual_search(return_value)
-            metric_interface_dual_b4a()
+            if check_dual:
+                sys.stdout = open(folder + '/' + name + '_Dual_connected_B4C.txt', 'w')
+                b4a_dual_neigh(return_value)
+                metric_interface_dual_b4a()
         
         ##################################
 
