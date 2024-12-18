@@ -5,8 +5,8 @@
 
 
 # Import required libraries
-# Version 4.3
-# Date 12/12/2024
+# Version 4.4
+# Date 12/18/2024
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
 
@@ -70,8 +70,7 @@ def restart_script():
 
 
 def scan_file():
-    global my_files
-    global cwd
+    global my_files, cwd, file_path
     my_files = []
     cwd = os.getcwd() # check for the file in current directory
     file_path = os.listdir(cwd) # list the files
@@ -2367,9 +2366,191 @@ def system_conf_7705():
 # In[28]:
 
 
+def dualb4a_bgp_neighbors(data):
+    global return_value
+    return_value = {}
+    cluster = None
+    start_key = 'group "RR-5-ENSESR-CLIENT"'
+    end_key = 'echo "Log all events for service vprn'
+    try:
+        # Find the start of the group block (start_key)
+        group_start_idx = data[data['config'].str.contains('group "RR-5-ENSESR-CLIENT"')].index[0]
+        
+        # Find the next occurrence of 'group' after the current start_key
+        group_end_idx_candidates = data[data['config'].str.contains(r'group ')].index.tolist()
+        group_end_idx = next((idx for idx in group_end_idx_candidates if idx > group_start_idx), len(data))
+
+        in_neighbor_block = False
+        current_neighbor_ip = None
+        current_import = None
+        
+        # Process only the current group block
+        for i in range(group_start_idx, group_end_idx):
+            line = data.at[i, 'config'].strip()
+
+            # Start tracking neighbor IP
+            if line.startswith('neighbor'):
+                in_neighbor_block = True
+                current_neighbor_ip = line.split()[1]
+
+            # Capture description if within a neighbor block
+            elif line.startswith('description') and in_neighbor_block:
+                description = line.split(' ', 1)[1].strip('"')
+                if 'B4A' in description: 
+                    return_value[current_neighbor_ip] = {
+                        'description': description,
+                        'import': current_import,  # Add import if already captured
+                    }
+
+            # Capture import if within a neighbor block
+            elif line.startswith('import') and in_neighbor_block:
+                current_import = line.split(' ', 1)[1].strip('"')
+                # Update the neighbor entry with import
+                if current_neighbor_ip in return_value:
+                    return_value[current_neighbor_ip]['import'] = current_import
+
+            # End of the neighbor block
+            elif line == 'exit' and in_neighbor_block:
+                in_neighbor_block = False
+                current_neighbor_ip = None
+                current_import = None
+        #print(return_value)
+    except Exception as e:
+        print(f"Error: {e}")
+    return return_value
+
+
+# In[29]:
+
+
+def b4a_dual_search(return_value):
+    global search_string,b4a_file_pd, b4a_name
+    b4a_path = []
+    
+    start_key = 'group "RR-5-ENSESR-CLIENT"'
+    end_key = 'echo "Log all events for service vprn'
+    return_value = dualb4a_bgp_neighbors(my_file_pd)
+    
+    # Print captured values
+    policy_list = []
+    for neighbor, details in return_value.items():
+        policy_list.append(details['description'][:-3])
+        #print(f"Neighbor: {neighbor}")
+        #print(f"  Description: {details['description']}")
+        #print(f"  Import: {details.get('import', 'N/A')}")# print n/a if the value doesnt exist to prevent error.
+        if not return_value:  # Check if return_value is empty
+            print("# No neighbors found. Skipping further checks.")
+    
+    #print(len(policy_list))
+    #print(policy_list)
+    if policy_list[0] == policy_list[1]:
+        print('# This is a dual B4A connected B4C')
+    else:
+        print('# This is not a dual B4A connected B4C')
+        
+    for neighbor, details in return_value.items():
+        if 'LL' not in details.get('import', ''):
+            search_string = re.sub(r'\bto\b\s*(?=[A-Z])', '', details['description'])
+    # Search for the file name in the list of paths under the all file function
+    for i in path:
+        if search_string in i:  # look for file in the path
+            b4a_path.append(i)
+
+    if b4a_path:
+        file_to_read = b4a_path[0]  # Get the first matched file path
+        if os.path.isfile(file_to_read):  # Check if file exists
+            try:
+                b4a_file_pd = pd.read_fwf(file_to_read, index_col=False, header=None, sep=' ')
+                b4a_file_pd = b4a_file_pd.rename(columns={0: "config"})
+                #print(b4a_file_pd.head())
+            except Exception as e:
+                print(f"# Error reading file: {e}")
+        else:
+            print(f"# Error: {file_to_read} is not there, please add it in same folder.")
+    else:
+        print("No B4A file found.")
+    
+    
+    
+        # Get site name
+    b4a_site_name = b4a_file_pd.index[b4a_file_pd['config'].str.contains("name")]
+    b4a_name = b4a_file_pd['config'][b4a_site_name[0]]
+    b4a_name = b4a_name[6:].strip('"')
+        #sys.stdout = open(folder + '/' + b4a_name + '_Dual_B4C_Script.txt', 'w')
+        
+        #print('# The {} file is missing'.format(search_string))
+    return b4a_file_pd, b4a_name
+
+
+# In[30]:
+
+
+def dual_b4a_metric_nni(data):
+    met_int_dual_b4a = {}
+    try:
+        # Find the start of search keyword
+        group_start_idx = data[data['config'].str.fullmatch('router Base')].index[0]
+        group_end_idx = data[data['config'].str.match('echo "Service')].index[0]
+        
+        in_neighbor_block = False  # Flag to track if we are within a neighbor block
+        interface_desc = None
+    
+        for i in range(group_start_idx, group_end_idx):
+            line = data.at[i, 'config'].strip()
+            
+            if line.startswith('interface'):
+                in_neighbor_block = True
+                interface_desc = line.split()[1]
+            elif line.startswith('description') and in_neighbor_block:
+                description = line.split(' ', 1)[1].strip('"')
+
+                if 'B4C' in description:  
+                    met_int_dual_b4a[interface_desc] = description
+
+                in_neighbor_block = False
+            elif line == 'exit':
+                in_neighbor_block = False
+    except IndexError:
+        print("# ERROR: No B4C interface was found, Please check the config manually")
+
+    return met_int_dual_b4a
+
+
+# In[31]:
+
+
+def metric_interface_dual_b4a(): # Interface output 
+    met_int_dual_b4a = dual_b4a_metric_nni(b4a_file_pd)
+    os.chdir("..")  # Move up one directory
+    if not os.path.isdir(b4a_name):
+        os.mkdir(b4a_name)
+        os.chdir(b4a_name)
+        folder = os.getcwd()
+    else:
+        os.chdir(b4a_name)
+        folder = os.getcwd()
+        os.chdir(cwd)
+    sys.stdout = open(folder + '/' + b4a_name + '_Dual_connected_B4C.txt', 'w')
+    print('')
+    print('###################################################################')
+    print('###########        LLD 135 Dual B4A connected B4C      ############')
+    print('###################################################################')
+    print('#--------------------------------------------------')
+    print('# Change Interface Metric for High latency link')
+    print('#--------------------------------------------------')
+    print('')
+    for interface_desc, description in met_int_dual_b4a.items():
+        print(description)
+        if 'B4C' in description:
+            print('/configure router isis 5 interface {} level 1 metric 1000010'.format(interface_desc))
+    print('')
+
+
+# In[32]:
+
+
 def main():
-    global items
-    global folder
+    global items, folder
     all_files()
     for items in path:
         create_pd()
@@ -2516,6 +2697,7 @@ def main():
                 policy_RR_5_L3VPN_CSR_SPOKE()
                 rr_5_7705h_7705_spoke()
             policy_remove()
+            
             # BOF config changes #################################
             sys.stdout = open(folder + '/' + name +'_bof.cfg','w')
             get_bof(my_file_pd)
@@ -2525,7 +2707,12 @@ def main():
             # Post checks file generation #################################
             sys.stdout = open(folder + '/' + name +'_Post_Checks.txt','w')
             pre_post_b40()
-
+            
+            # Dual B4C to B4A config generation ###########################
+            return_value = dualb4a_bgp_neighbors(my_file_pd)
+            b4a_dual_search(return_value)
+            metric_interface_dual_b4a()
+        
         ##################################
 
         if 'B4S' in name:
@@ -2553,7 +2740,7 @@ def main():
         os.chdir("..")  # Move up one directory
 
 
-# In[29]:
+# In[33]:
 
 
 if __name__ == "__main__":
