@@ -5,8 +5,8 @@
 
 
 # Import required libraries
-# Version 4.4a
-# Date 12/18/2024
+# Version 4.5
+# Date 12/19/2024
 
 # This file is for router type B4A, B4B, B4C, B4S and B4E
 
@@ -1365,7 +1365,80 @@ def policy_RR_5_ENSESR_CSR_AL():
     print ('        exit all')
 
 ############################
+def policy_RR_5_ENSESR_CSR_AL_LL():
+        print ('/configure router policy-options')
+        print ('            begin')
+        print ('            policy-statement "EXPORT_RR-5-ENSESR_CSR-AL_LL"')
+        print ('                description "EXPORT ROUTES TO LL HUB ACCESS LEAF"')
+        print ('                entry 5')
+        print ('                    description "DROP DEFAULT ROUTE"')
+        print ('                    from')
+        print ('                        prefix-list "PRFX_DEFAULT"')
+        print ('                    exit')
+        print ('                    action drop')
+        print ('                    exit')
+        print ('                exit')
+        print ('                entry 10')
+        print ('                    description "SEND MY LOOPBACK LABEL WITH SID"')
+        print ('                    from')
+        print ('                        prefix-list "PRFX_GLOBAL_LOOPBACK"')
+        print ('                    exit')
+        print ('                    to')
+        print ('                        protocol bgp-label')
+        print ('                    exit')
+        print ('                    action accept')
+        print ('                        local-preference 500')
+        print ('                        aigp-metric igp')
+        print ('                    exit')
+        print ('                exit')
+        print ('                entry 20')
+        print ('                    description "PROPAGATE CONNECTED ROUTES"')
+        print ('                    from')
+        print ('                        protocol direct')
+        print ('                    exit')
+        print ('                    to')
+        print ('                        protocol evpn-ifl')
+        print ('                    exit')
+        print ('                    action accept')
+        print ('                        local-preference 500')
+        print ('                    exit')
+        print ('                exit')
+        print ('                entry 30')
+        print ('                    description "PROPAGATE BGP LABELS"')
+        print ('                    from')
+        print ('                        protocol bgp-label')
+        print ('                    exit')
+        print ('                    to')
+        print ('                        protocol bgp-label')
+        print ('                    exit')
+        print ('                    action accept')
+        print ('                        local-preference 500')
+        print ('                        aigp-metric igp')
+        print ('                    exit')
+        print ('                exit')
+        print ('                entry 40')
+        print ('                    description "PROPAGATE EVPN ROUTES"')
+        print ('                    from')
+        print ('                        evpn-type 5')
+        print ('                        family evpn')
+        print ('                    exit')
+        print ('                    action accept')
+        print ('                        local-preference 500')
+        print ('                    exit')
+        print ('                exit')
+        print ('                default-action drop')
+        print ('                exit')
+        print ('            exit')
+        print ('            policy-statement "IMPORT_RR-5-ENSESR_CSR-AL_LL"')
+        print ('                description "IMPORT ROUTES FROM LL HUB ACCESS LEAF"')
+        print ('                default-action accept')
+        print ('                    local-preference 500')
+        print ('                exit')
+        print ('            exit')
+        print ('            commit')
+        print ('        exit all')
 
+############################    
 def policy_RR_5_ENSESR_SPOKE_CSR():
     print('/configure router policy-options')
     print ('            begin')
@@ -1843,6 +1916,137 @@ def extract_bgp_neighbors(data, start_key, end_key, find_value):
 # In[20]:
 
 
+####### Search the existing HUB policy with LL and NON LL b40 ips    ###################
+def extract_LL_bgp_neighbors(data, start_key, end_key, find_value):
+    global return_value#, cluster
+    return_value = {}
+    #cluster = None
+
+    try:
+        # Find the start and end of the start_key
+        group_start_idx = data[data['config'].str.contains(start_key)].index[0]
+        group_end_idx = data[data['config'].str.contains(end_key)].index[0]
+        
+        in_neighbor_block = False
+        current_neighbor_ip = None
+        current_import_line = None  # Variable to hold the import line
+        
+        for i in range(group_start_idx, group_end_idx):
+            line = data.at[i, 'config'].strip()
+
+            # Capture the cluster value if it exists
+            #if line.startswith('cluster'):
+            #    cluster = line.split()[1]  # Store the cluster IP
+            
+            # Start tracking neighbor IP
+            if line.startswith('neighbor'):
+                in_neighbor_block = True
+                current_neighbor_ip = line.split()[1]
+            
+            # Capture description if within a neighbor block
+            elif line.startswith('description') and in_neighbor_block:
+                description = line.split(' ', 1)[1].strip('"')
+                if find_value in description:  # Ensure 'find_value' is in description
+                    return_value[current_neighbor_ip] = {'description': description}
+            
+            # Capture the import line if within a neighbor block
+            elif line.startswith('import') and in_neighbor_block:
+                current_import_line = line.split('"')[1]  # Extract the import policy name
+                return_value[current_neighbor_ip]['import'] = current_import_line
+            
+            # Reset block flag on exit
+            elif line == 'exit':
+                in_neighbor_block = False
+
+    except IndexError:
+        print("# ERROR: The target BGP group was not found in the file.")
+        
+    return return_value
+
+###############################################################
+
+#--------------------------------------------------
+
+
+# In[21]:
+
+
+####### Create the new HUB policy with LL and NON LL b40 ips    ###################
+def print_bgp_ll_neighbors(neighbors, start_key, old_import_policy, new_group, new_description, new_import_policy):
+	global neighbor_ip
+	#print('#---------------------------------------------------------')
+	#print('#######-----      New BGP Configuration     -------######')
+	#print('#---------------------------------------------------------')
+	#print('/configure router bgp no keepalive')
+	#print('/configure router bgp no hold-time')
+	#print('/configure router bgp min-route-advertisement 1')
+	#print('/configure router bgp multi-path maximum-paths 16')
+	#print('/configure router bgp advertise-inactive')
+	##print('/configure router bgp no bfd-enable')
+	#print('/configure router bgp rapid-withdrawal')
+	
+	print('##---------------------------------------------------------')        
+	print('######-----       Delete Old BGP Group      -------######')
+	print('##---------------------------------------------------------')
+	print('/configure router bgp')
+	print('    {} shutdown'.format(start_key))
+	print('    no {}'.format(start_key))
+	print('        exit all')
+	print('/configure router policy-options')
+	print ('            begin')
+	print('    no policy-statement "{}"'.format(old_import_policy))
+	print('    no policy-statement "{}"'.format(old_import_policy.replace("IMPORT", "EXPORT")))
+	print('    no policy-statement "{}_LL"'.format(old_import_policy))
+	print('    no policy-statement "{}_LL"'.format(old_import_policy.replace("IMPORT", "EXPORT")))
+	print ('            commit')
+	print ('exit all')
+	print('')
+	print('##---------------------------------------------------------')        
+	print('######-----        Add New BGP Group        -------######')
+	print('##---------------------------------------------------------')
+
+	for neighbor_ip, details in neighbors.items():
+		if 'LL' in details['import']:
+			print('/configure router bgp')
+			print('            group "{}_LL"'.format(new_group.split('"')[1]))
+			print('                description "{}"'.format(new_description.replace("EBH AL", "LL EBH AL")))
+			print('                family evpn label-ipv4')
+			print('                type internal')
+			print('                import "{}_LL"'.format(new_import_policy))
+			print('                export "{}_LL"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
+			print('                advertise-inactive')
+			print('                bfd-enable')
+			print('                aigp')
+			print('                neighbor {}'.format(neighbor_ip))
+			print('                    description "{}"'.format(details['description']))
+			print('                    authentication-key "eNSEbgp"')
+			print('                exit')
+			print('            exit')
+		if 'LL' not in details['import']:
+			print('/configure router bgp')
+			print('            {}'.format(new_group))
+			print('                description "{}"'.format(new_description))
+			print('                family evpn label-ipv4')
+			print('                type internal')
+			print('                import "{}"'.format(new_import_policy))
+			print('                export "{}"'.format(new_import_policy.replace("IMPORT", "EXPORT")))
+			print('                advertise-inactive')
+			print('                bfd-enable')
+			print('                aigp')
+			print('                neighbor {}'.format(neighbor_ip))
+			print('                    description "{}"'.format(details['description']))
+			print('                    authentication-key "eNSEbgp"')
+			print('                exit')
+			print('            exit')
+		print('            no shutdown')
+		print('        exit')
+		print('    exit')
+		print('exit all')
+
+
+# In[22]:
+
+
 def new_bgp_group(new_group, new_description,cluster_value, return_value, start_key, old_import_policy, new_import_policy):
     print('#--------------------------------------------------------#')        
     print('######-----       Delete Old BGP Group      -------######')
@@ -1936,7 +2140,7 @@ def new_7705_bgp_group(new_group, new_description,cluster_value, return_value, s
     print('#--------------------------------------------------------#')
 
 
-# In[21]:
+# In[23]:
 
 
 ######################## Groups for B4A ###########################
@@ -1976,7 +2180,7 @@ def rr_5_ensesr_csr_b4a(): # B4A Facing IXRE DRAN downstream
 
 
 
-# In[22]:
+# In[24]:
 
 
 ######################## Groups for B4B ###########################
@@ -2023,10 +2227,25 @@ def rr_5_ENSESR_b4b():  #  Facing B4A
 	new_bgp_group(new_group, new_description,cluster_value, return_value, start_key, old_import_policy, new_import_policy)
 
 
-# In[23]:
+# In[25]:
 
 
 ######################## Groups for B4C  #####################
+# This group and policy will be applied for LL and non LL neighbor only.
+def RR_5_ENSESR_AL_LL(): # For policy  
+	global extract_bgp_neighbors
+	data = my_file_pd
+	start_key = 'group "RR-5-ENSESR-CLIENT"' #(Old group name)
+	old_import_policy = 'IMPORT_RR-5-ENSESR-CLIENT'
+	end_key = 'echo "Log all events for service vprn'
+	find_value = 'B4A'
+	new_group = 'group "RR-5-ENSESR_AL"'
+	new_description = 'Neighbor group for HUB AL' 
+	new_import_policy = 'IMPORT_RR-5-ENSESR_CSR-AL' 
+
+# Extract neighbors and cluster
+	neighbors = extract_LL_bgp_neighbors(data, start_key, end_key, find_value)
+	print_bgp_ll_neighbors(neighbors, start_key, old_import_policy, new_group, new_description, new_import_policy)
 
 def rr_5_ENSESR_b4c(): #  7250 Hub facing B4A
 	data = my_file_pd
@@ -2146,7 +2365,7 @@ def rr_5_7705s_7705h(): # 7705 Spoke facing 7705 Hub
 	new_7705_bgp_group(new_group, new_description,cluster_value, return_value, start_key, old_import_policy, new_import_policy)
 
 
-# In[24]:
+# In[26]:
 
 
 # B40 group change and check interface to 1000000
@@ -2239,7 +2458,7 @@ def b40_02_rollback_ixre(system_ip, name):
     print ('# If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
-# In[25]:
+# In[27]:
 
 
 # Post check ping check script / 
@@ -2268,7 +2487,7 @@ def post_b40_ping():
         print('ping router-instance "CELL_MGMT" {}'.format(mgm.split('/', 1)[0][8:]))
 
 
-# In[26]:
+# In[28]:
 
 
 def b4a_qos():
@@ -2292,7 +2511,7 @@ def b4a_qos():
     print('exit all')
 
 
-# In[27]:
+# In[29]:
 
 
 def b4b_b40_bgp_conf():
@@ -2363,7 +2582,25 @@ def system_conf_7705():
         print('exit all')
 
 
-# In[28]:
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[30]:
 
 
 def dualb4a_bgp_neighbors(data):
@@ -2420,7 +2657,7 @@ def dualb4a_bgp_neighbors(data):
     return return_value
 
 
-# In[29]:
+# In[31]:
 
 
 def b4a_dual_search(return_value):
@@ -2484,7 +2721,7 @@ def b4a_dual_neigh(return_value):
     return b4a_file_pd, b4a_name
 
 
-# In[30]:
+# In[32]:
 
 
 def dual_b4a_metric_nni(data):
@@ -2518,7 +2755,7 @@ def dual_b4a_metric_nni(data):
     return met_int_dual_b4a
 
 
-# In[31]:
+# In[33]:
 
 
 def metric_interface_dual_b4a(): # Interface output 
@@ -2546,7 +2783,7 @@ def metric_interface_dual_b4a(): # Interface output
         print('# ERROR: No data file created due to missing B4A file.')
 
 
-# In[32]:
+# In[34]:
 
 
 def main():
@@ -2650,6 +2887,7 @@ def main():
         if 'B4C' in name:
             # Check for the B4C, B4S, B4E
             policy_CSR_B4C = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR-CLIENT"')].tolist() # east or west ring router but not B40
+            policy_CSR_ll = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR-CLIENT"')].tolist() 
             policy_CSR_7705 = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-L3VPN-CLIENT"')].tolist() #--- These are spokes and CSR 
             policy_7705h_7705s = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-L3VPN"')].tolist() # 77-5 HUB facing the 7705 
             policy_CSR_B4C_spoke = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR"')].tolist() # 77-5 HUB facing the 7705 
@@ -2668,7 +2906,7 @@ def main():
             port_bfd(my_file_pd)
             bgp_remove_b4c()
             policy_bgp()
-            if b4c_ixre_sa_exists: #( Both SA and HUB 7250 evpn)
+            if b4c_ixre_sa_exists and not bool(policy_CSR_ll): #( Both SA and HUB 7250 evpn)
                 if int_b4_value == 'B4A' or port_b4a_value == 'B4A': # if B4A in the interface desc
                     policy_RR_5_ENSESR_CSR_AL()
                     rr_5_ENSESR_b4c() # "RR-5-ENSESR-CLIENT" has a spoke
@@ -2676,6 +2914,21 @@ def main():
                     policy_RR_5_ENSESR_SPOKE_CSR()
                     rr_5_ENSESR_spoke_b4c()
 
+            
+            if b4c_ixre_sa_exists and bool(policy_CSR_ll): #( Both HL and LL on Dual homed B4C)
+                if int_b4_value == 'B4A' or port_b4a_value == 'B4A': # if B4A in the interface desc
+                    policy_RR_5_ENSESR_CSR_AL()
+                    policy_RR_5_ENSESR_CSR_AL_LL()
+                    RR_5_ENSESR_AL_LL()
+                    # Dual B4C to B4A config generation ###########################
+                    return_value = dualb4a_bgp_neighbors(my_file_pd)
+                    b4a_dual_search(return_value)
+                    b4a_dual_neigh(return_value)
+                    sys.stdout = open(folder + '/' + b4a_name +'_Dual_Homed_Script.txt','w')
+                    metric_interface_dual_b4a()
+
+
+            
             if b4c_ixre_spoke_exists:    # HUB having spoke
                 policy_RR_5_ENSESR_CSR_SPOKE()
                 rr_5_ENSESR_b4c_spoke()
@@ -2696,6 +2949,8 @@ def main():
             if b4c_7705h_7705s_exists:
                 policy_RR_5_L3VPN_CSR_SPOKE()
                 rr_5_7705h_7705_spoke()
+            
+            sys.stdout = open(folder + '/' + name +'_LLD135.cfg','a')
             policy_remove()
             
             # BOF config changes #################################
@@ -2708,13 +2963,6 @@ def main():
             sys.stdout = open(folder + '/' + name +'_Post_Checks.txt','w')
             pre_post_b40()
             
-            # Dual B4C to B4A config generation ###########################
-            return_value = dualb4a_bgp_neighbors(my_file_pd)
-            b4a_dual_search(return_value)
-            if check_dual:
-                b4a_dual_neigh(return_value)
-                sys.stdout = open(folder + '/' + b4a_name + '_Dual_connected_B4C.txt', 'w')
-                metric_interface_dual_b4a()
         
         ##################################
 
@@ -2743,7 +2991,7 @@ def main():
         os.chdir("..")  # Move up one directory
 
 
-# In[33]:
+# In[35]:
 
 
 if __name__ == "__main__":
