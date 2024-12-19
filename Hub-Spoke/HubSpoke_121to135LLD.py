@@ -2887,7 +2887,7 @@ def main():
         if 'B4C' in name:
             # Check for the B4C, B4S, B4E
             policy_CSR_B4C = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR-CLIENT"')].tolist() # east or west ring router but not B40
-            policy_CSR_ll = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR-CLIENT"')].tolist() 
+            policy_CSR_ll = my_file_pd.index[my_file_pd['config'].str.contains ('import "IMPORT_RR-5-ENSESR-CLIENT_LL"')].tolist() 
             policy_CSR_7705 = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-L3VPN-CLIENT"')].tolist() #--- These are spokes and CSR 
             policy_7705h_7705s = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-L3VPN"')].tolist() # 77-5 HUB facing the 7705 
             policy_CSR_B4C_spoke = my_file_pd.index[my_file_pd['config'].str.contains ('group "RR-5-ENSESR"')].tolist() # 77-5 HUB facing the 7705 
