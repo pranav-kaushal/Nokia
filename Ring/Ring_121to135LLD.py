@@ -5,7 +5,8 @@
 
 
 # Import required libraries
-# Version 2.04
+# Version 2.05
+# Date 12/19/2024
 
 import pandas as pd
 import os
@@ -2066,12 +2067,13 @@ def new_qos():
 # B40 group change and check interface to 1000000
 
 def b40_01_changes_ixre(system_ip, name):
-    print ('### Remove neighbor from 121 bgp group')
+    sys.stdout = open(folder + '/' + name +'_B40-01.txt','w')
+    print ('### Remove neighbor from 121 bgp group ###')
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR" no neighbor {}'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('###Add neighbor to 135 bgp group')
+    print ('### Add neighbor to 135 bgp group ###')
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {}'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
@@ -2084,15 +2086,32 @@ def b40_01_changes_ixre(system_ip, name):
     print ('/show router isis 5 interface | match "site interface"')
     #print ('/configure router isis 5 interface " level 1 metric 1000000
     print ('If the above interface level 1 metric is not 1000000 then change it to 1000000')
-
+    print ('')
+    print ('')
+    print ('')
+    print ('###################################################')
+    print ('####     ROLLBACK FOR B40-01     ####')
+    #--------------------------------------------------------#
+    print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} shutdown'.format(system_ip))
+    print ('/configure router bgp group "RR-5-ENSESR_IRR" no neighbor {}'.format(system_ip))
+    print ('exit all')
+    print ('')
+    print ('### Add neighbor to 121 bgp group ###')
+    print ('/configure router bgp group "RR-5-ENSESR" neighbor {}'.format(system_ip))
+    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
+    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
+    print ('exit all')
+    print ('')
+    #--------------------------------------------------------#
 
 def b40_02_changes_ixre(system_ip, name):
-    print ('###Remove neighbor from 121 bgp group')
+    sys.stdout = open(folder + '/' + name +'_B40-02.txt','w')
+    print ('### Remove neighbor from 121 bgp group ###')
     print ('/configure router bgp group "RR-5-ENSESR" neighbor {} shutdown'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR" no neighbor {}'.format(system_ip))
     print ('exit all')
     print ('')
-    print ('###Add neighbor to 135 bgp group')
+    print ('### Add neighbor to 135 bgp group ###')
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {}'.format(system_ip))
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
     print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
@@ -2105,52 +2124,25 @@ def b40_02_changes_ixre(system_ip, name):
     print ('/show router isis 5 interface | match "site interface"')
     print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
+    print ('')
+    print ('')
+    print ('')
+    print ('###################################################')
+    print ('####     ROLLBACK FOR B40-02     ####')
+    #--------------------------------------------------------#
+    print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} shutdown'.format(system_ip))
+    print ('/configure router bgp group "RR-5-ENSESR_IRR" no neighbor {}'.format(system_ip))
+    print ('exit all')
+    print ('')
+    print ('### Add neighbor to 121 bgp group')
+    print ('/configure router bgp group "RR-5-ENSESR" neighbor {}'.format(system_ip))
+    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
+    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
+    print ('exit all')
+    print ('')
 
 # B40 group change and check interface to 1000000
 
-def b40_01_rollback_ixre(system_ip, name):
-    print ('')
-    print ('')
-    print ('')
-    print ('###################################################')
-    print ('#     ROLLBACK FOR B40-01     "')
-    #--------------------------------------------------------#
-    print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} shutdown'.format(system_ip))
-    print ('/configure router bgp group "RR-5-ENSESR_IRR" no neighbor {}'.format(system_ip))
-    print ('exit all')
-    print ('')
-    print ('###Add neighbor to 135 bgp group')
-    print ('/configure router bgp group "RR-5-ENSESR" neighbor {}'.format(system_ip))
-    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
-    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
-    print ('exit all')
-    print ('')
-    #--------------------------------------------------------#
-
-
-def b40_02_rollback_ixre(system_ip, name):
-    print ('')
-    print ('')
-    print ('')
-    print ('###################################################')
-    print ('#     ROLLBACK FOR B40-02     "')
-    #--------------------------------------------------------#
-    print ('/configure router bgp group "RR-5-ENSESR_IRR" neighbor {} shutdown'.format(system_ip))
-    print ('/configure router bgp group "RR-5-ENSESR_IRR" no neighbor {}'.format(system_ip))
-    print ('exit all')
-    print ('')
-    print ('###Add neighbor to 135 bgp group')
-    print ('/configure router bgp group "RR-5-ENSESR" neighbor {}'.format(system_ip))
-    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} description "iBGP-TO-{}"'.format(system_ip, name))
-    print ('/configure router bgp group "RR-5-ENSESR" neighbor {} authentication-key "eNSEbgp"'.format(system_ip))
-    print ('exit all')
-    print ('')
-    #--------------------------------------------------------#
-    print ('# Check for the routers interface metric under ISIS 5"')
-    #--------------------------------------------------------#
-    print ('admin display-config | match "{}" context all'.format(name))
-    print ('/show router isis 5 interface | match "site interface"')
-    print ('If the interface level 1 metric is not 1000000 then change it to 1000000')
 
 
 # In[23]:
@@ -2309,6 +2301,8 @@ def main():
                     print("# This is a West Node")
                     policy_RR_5_ENSESR_IRRW_EBH() # for ring b40 node (tested)
                     rr_5_ensesr_ebh_west() # (tested)
+                    b40_01_changes_ixre(system_ip, name)
+                    sys.stdout = open(folder + '/' + name + '_LLD135.cfg', 'a')
                     if bool(grp_rr_5_ENSESR):
                         spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
                         if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
@@ -2324,6 +2318,9 @@ def main():
                     print("# This is a East Node")
                     policy_RR_5_ENSESR_IRRE_EBH() # for ring b40 node (tested)
                     rr_5_ensesr_ebh_east() # (tested)
+                    b40_02_changes_ixre(system_ip, name)
+                    
+                    sys.stdout = open(folder + '/' + name + '_LLD135.cfg', 'a')
                     if bool(grp_rr_5_ENSESR):
                         spoke_bgp_neighbors, csr_bgp_neighbors, cluster = extract_neighbors(my_file_pd,'group "RR-5-ENSESR"')
                         if len(spoke_bgp_neighbors)>=1 or len(csr_bgp_neighbors)>=1:
